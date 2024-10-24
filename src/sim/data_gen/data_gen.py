@@ -21,7 +21,7 @@ def gen_data(info):
     
     if save_data:
         # create folder
-        obj_dir = os.path.join(data_dir, obj+"_set_action_trial2")
+        obj_dir = os.path.join(data_dir, obj+"_set_action_first_try_100_epochs")
         epi_dir = os.path.join(obj_dir, f'{idx_episode:06}')
         os.makedirs(epi_dir, exist_ok=True)
 
@@ -44,10 +44,10 @@ def gen_data(info):
     # save initial data
     if save_data:
         # save data [info, action, positions, eef_states, observations]
-        filename = os.path.join(epi_dir, f'new_sim{0:02}.h5')
+        filename = os.path.join(epi_dir, f'{0:02}.h5')
         store_data(filename, data, actions[0])
         # save physics params
-        with open(os.path.join(epi_dir, 'new_sim_property_params.pkl'), 'wb') as f:
+        with open(os.path.join(epi_dir, 'property_params.pkl'), 'wb') as f:
             pickle.dump(physics_params, f)
         # save camera params
         if idx_episode == base_0:
@@ -79,16 +79,21 @@ def gen_data(info):
                 #u = env.sample_action() # [x_start, z_start, x_end, z_end]
                 # hard set the start and end to be a specific action
                 print("data gen, hard set action")
-                if idx_timestep == 0:
-                    u = np.array([0.1, 0.0, 0.3, 0.0])
-                elif idx_timestep == 1:
-                    u = np.array([0.3, 0.0, -0.2, 0.0])
-                elif idx_timestep == 2:
-                    u = np.array([-0.2, 0.0, -0.2, 0.1])
-                elif idx_timestep == 3:
-                    u = np.array([-0.2, 0.1, 0.0, 0.05])
-                elif idx_timestep == 4:
-                    u = np.array([0.0, 0.05, 0.2, 0.3])
+                if idx_timestep % 5 == 0:
+                    u = np.array([0.0, 0.0, 0.55, 0.1])
+                    #u = np.array([0.1, 0.0, 0.3, 0.0])
+                elif idx_timestep % 5 == 1:
+                    u = np.array([0.55, 0.1, 0.55, 0.6])
+                    #u = np.array([0.3, 0.0, -0.2, 0.0])
+                elif idx_timestep % 5 == 2:
+                    u = np.array([0.55, 0.6, 1.0, 0.6])
+                    #u = np.array([-0.2, 0.0, -0.2, 0.1])
+                elif idx_timestep % 5 == 3:
+                    u = np.array([1.0, 0.6, 1.0, 0.1])
+                    #u = np.array([-0.2, 0.1, 0.0, 0.05])
+                elif idx_timestep % 5 == 4:
+                    u = np.array([1.0, 0.1, 0.01, 0.3])
+                    #u = np.array([0.0, 0.05, 0.2, 0.3])
                 else:
                     u = np.array([0.2, 0.3, 0.0, 0.0])
             # write out to file the action
