@@ -9,6 +9,7 @@ def load_pairs(pairs_path, episode_range):
         n_pushes = len(list(glob.glob(os.path.join(pairs_path, f'{episode_idx:06}_*.txt'))))
         for push_idx in range(1, n_pushes+1):
             frame_pairs = np.loadtxt(os.path.join(pairs_path, f'{episode_idx:06}_{push_idx:02}.txt'))
+            print(f"frame_pairs shape: {frame_pairs.shape}")
             if len(frame_pairs.shape) == 1: continue
             episodes = np.ones((frame_pairs.shape[0], 1)) * episode_idx
             pairs = np.concatenate([episodes, frame_pairs], axis=1) # (T, 8)
@@ -19,9 +20,11 @@ def load_pairs(pairs_path, episode_range):
 def load_dataset(dataset_config, material_config, phase='train'):
     # config
     data_name = dataset_config['data_name']
-    data_dir = os.path.join(dataset_config['data_dir'], data_name)
-    prep_dir = os.path.join(dataset_config['prep_data_dir'], data_name)
+    data_dir = os.path.join(dataset_config['data_dir'], data_name)#+"_set_action_first_try_100_epochs")
+    prep_dir = os.path.join(dataset_config['prep_data_dir'], data_name)#+"_set_action_first_try_100_epochs")
     ratio = dataset_config['ratio']
+
+    print("data dir for loading dataset: ", data_dir)
     
     # episodes
     num_epis = len(sorted([f for f in os.listdir(data_dir) if os.path.isdir(os.path.join(data_dir, f)) and f.isdigit()]))

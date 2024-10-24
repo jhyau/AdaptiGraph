@@ -118,14 +118,21 @@ def visualize_graph(imgs, cam_info,
     # map physics param to color
     phys2color = {}
     count = 0
-    for i in range(physics_param.shape[0]):
-        if physics_param[i] not in phys2color:
-            phys2color[physics_param[i]] = count
+    for i in range(physics_param.squeeze().shape[0]):
+        if physics_param.squeeze()[i] not in phys2color:
+            phys2color[physics_param.squeeze()[i]] = count
             count += 1
     
+    print(f"{int(colormap[0, 2])}, {int(colormap[0, 1])}, {int(colormap[0, 0])}")
+    print("num colors: ", len(phys2color))
+    color_step = int(255 / len(phys2color))
     for k in range(obj_kp_proj.shape[0]):
-        cv2.circle(img, (int(obj_kp_proj[k, 0]), int(obj_kp_proj[k, 1])), point_size, 
-            (int(colormap[k, 2]), int(colormap[k, 1]), int(colormap[k, 0])), -1)
+        phys_param = physics_param.squeeze()[k]
+        col = phys2color[phys_param]
+        print(f"visualizing obj particles, phys param: {phys_param}, color: {col}")
+        cv2.circle(img, (int(obj_kp_proj[k, 0]), int(obj_kp_proj[k, 1])), point_size,
+            (col*color_step, 0, 0), -1)
+            #(int(colormap[k, 2]), int(colormap[k, 1]), int(colormap[k, 0])), -1)
 
     # also visualize tool in red
     for k in range(tool_kp_proj.shape[0]):
@@ -275,6 +282,7 @@ def construct_graph(dataset_config, material_config, eef_pos, obj_pos,
     # obj_kps: (T, N_obj_all, 3)
     # eef_kps: (T, N_eef, 3)
     obj_kps, eef_kps = np.array(obj_kps), np.array(eef_kps)
+    print(f"obj_kps size: {obj_kps.shape}, eef_kps size: {eef_kps.shape}")
     
     ## Farthest point sampling for object particles
     # fps_obj_idx: (N_fps, )
@@ -314,6 +322,8 @@ def construct_graph(dataset_config, material_config, eef_pos, obj_pos,
     
     obj_mask = np.zeros((obj_dim), dtype=bool)
     obj_mask[:obj_kp_num] = True
+    print(f"obj_mask shape: {obj_mask.shape}, mask: {obj_mask}")
+    print(f"eef_mask shape: {eef_mask.shape}, mask: {eef_mask}")
 
     ## construct attrs
     # attr_dim: (N_obj + N_eef, 2)
@@ -381,6 +391,12 @@ def construct_graph(dataset_config, material_config, eef_pos, obj_pos,
     print(f"obj dim: {obj_dim}")
     # physics param is normalized between 0 and 1
     mat = None
+    # TODO: sort the particles by position (in order of x, y, z) then set the physics params for current time step
+    sort_by_pos = np.lexsort((obj_kps[0,:,2], obj_kps[0,:,1], obj_kps[0,:,0]))
+    print(f"sorted indices: {sort_by_pos}")
+    print(f"obj_kps: {obj_kps[0]}")
+    print(f"obj_kps sorted: {obj_kps[0][sort_by_pos]}")
+    # only the first obj_kp_num particles are visualized
     for material_name in physics_param.keys():
         #graph[material_name + '_physics_param'] = physics_param[material_name]
         print(f"material: {material_name}, original physics_param: {physics_param[material_name]}")
@@ -389,9 +405,17 @@ def construct_graph(dataset_config, material_config, eef_pos, obj_pos,
         # Half normal stiffness, half extra stiffness
         physics_for_each_obj = np.zeros((obj_dim), dtype=np.float32)
         #physics_for_each_obj[:int(obj_dim/2)] = physics_param[material_name].numpy()
-        physics_for_each_obj[int(obj_dim/2):] = physics_param[material_name].numpy() + 1.0
+        #physics_for_each_obj[int(obj_dim/2):] = physics_param[material_name].numpy() + 1.0
         #physics_for_each_obj[:] = physics_param[material_name].numpy() + 1.0
+
+        # Half of the visualized particles, in sorted order
+        #sorted_by_pos = physics_for_each_obj[sort_by_pos]
         
+        # Split in half by visualized half
+        # fps_idx_list for list of farthest point sampled particles
+        physics_for_each_obj[:int(obj_kp_num/2)] = 0.0
+        physics_for_each_obj[int(obj_kp_num/2):obj_kp_num] = 2.0 #physics_param[material_name].numpy() + 1.0
+
         # Alternate chunks of soft and stiff rope
         #step = int(obj_dim/4)
         #physics_for_each_obj[:step] = physics_param[material_name].numpy()

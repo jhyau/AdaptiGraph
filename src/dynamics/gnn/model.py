@@ -187,19 +187,21 @@ class DynamicsPredictor(nn.Module):
         assert len(physics_keys) == 1
         physics_param_og = kwargs[physics_keys[0]]  # (B, phys_dim[i])
         physics_param_og = physics_param_og[:, None, :].repeat(1, n_p, 1)  # (B, N, phys_dim)
-        print(f"original physics_param size: ", physics_param_og.size())
+        #print(f"original physics_param size: ", physics_param_og.size())
         # if physics_param is already a matrix
-        physics_param = kwargs[physics_keys[0]].reshape(1, kwargs[physics_keys[0]].shape[-1], 1)
+        #physics_param = kwargs[physics_keys[0]].reshape(1, kwargs[physics_keys[0]].shape[-1], 1)
+        physics_param = kwargs[physics_keys[0]].reshape(1, n_p, 1)
         physics_param_s = torch.zeros(B, n_s, physics_param.shape[2]).to(self.device)
         physics_param = torch.cat([physics_param, physics_param_s], 1)
-        print(f"after cat physics_param size: ", physics_param.size())
+        #print(f"physics_param matrix size in gnn: {physics_param.size()}")
+        #print(f"after cat physics_param size: ", physics_param.size())
         p_inputs = torch.cat([p_inputs, physics_param], 2)
 
-        print(f"physics keys: {physics_keys}")
-        print(f"B: {B}, N: {n_s}, phys_dim: {physics_param.shape}")
-        print(f"physics_param size: ", physics_param.size())
-        print(f"physics_param_s size: ", physics_param_s.size())
-        print(f"physics_param: {physics_param}, p_inputs: {p_inputs.size()}")
+        #print(f"physics keys: {physics_keys}")
+        #print(f"B: {B}, N: {n_s}, phys_dim: {physics_param.shape}")
+        #print(f"physics_param size: ", physics_param.size())
+        #print(f"physics_param_s size: ", physics_param_s.size())
+        #print(f"physics_param: {physics_param}, p_inputs: {p_inputs.size()}")
 
         # action
         if self.model_config['action_dim'] > 0:

@@ -48,6 +48,7 @@ def rollout_from_start_graph(graph, fps_idx_list, dataset_config, material_confi
         Rs = graph['Rs'].numpy()
         eef_kp = graph['eef_kp'].numpy()
         kp_vis = graph['state'][-1, :obj_kp_num].numpy()
+        print(f"obj_kp_num: {obj_kp_num}, obj_mask size: {obj_mask.shape}, kp_vis shape: {kp_vis.shape}")
         
         save_dir = os.path.join(save_dir, f"cam_{cam_info['cam']}")
         os.makedirs(save_dir, exist_ok=True)
@@ -55,7 +56,7 @@ def rollout_from_start_graph(graph, fps_idx_list, dataset_config, material_confi
         physics_param = None
         for name in graph.keys():
             if name.endswith('_physics_param'):
-                physics_param = graph[name]
+                physics_param = graph[name][:obj_kp_num].numpy()
         
         pred_kp_proj_last, gt_kp_proj_last, gt_lineset, pred_lineset = \
             visualize_graph(imgs, cam_info, kp_vis, kp_vis, eef_kp, Rr, Rs,
@@ -88,6 +89,7 @@ def rollout_from_start_graph(graph, fps_idx_list, dataset_config, material_confi
             # fps for visualization
             obj_kp_vis = obj_kp[:obj_kp_num] # (N_fps, 3)
             gt_kp_vis = gt_kp[:obj_kp_num] # (N_fps, 3)
+            print(f"obj_kp_num: {obj_kp_num}, obj_kp shape: {obj_kp.shape}, obj_kp_vis shape: {obj_kp_vis.shape}")
             
             # calculate error
             error = np.linalg.norm(obj_kp - gt_kp, axis=-1).mean()
@@ -150,7 +152,8 @@ def rollout_from_start_graph(graph, fps_idx_list, dataset_config, material_confi
                 visualize_graph(imgs, cam_info, obj_kp_vis, gt_kp_vis, eef_kp, Rr, Rs,
                                 current_start, current_end, i, save_dir, max_nobj,
                                 gt_lineset=gt_lineset, pred_lineset=pred_lineset,
-                                pred_kp_proj_last=pred_kp_proj_last, gt_kp_proj_last=gt_kp_proj_last, physics_param=graph[mat_name])
+                                pred_kp_proj_last=pred_kp_proj_last, gt_kp_proj_last=gt_kp_proj_last,
+                                physics_param=graph[mat_name][:, :obj_kp_num].detach().cpu().numpy())
                 
     return error_list
 
@@ -176,7 +179,6 @@ def rollout_episode_pushes(model, device, dataset_config, material_config,
     
         ## construct graph
         physics_param_shift = i
-        print(f"constructing graph with physics param shift {i}")
         graph, fps_idx_list = construct_graph(dataset_config, material_config, eef_pos_epi, obj_pos_epi,
                                         n_his, pair, physics_param, physics_param_shift)
     
@@ -237,6 +239,7 @@ def rollout_dataset(model, device, config, save_dir, viz):
         
         if viz:
             imgs, cam_info = extract_imgs(dataset_config, episode_idx, cam=0)
+            print(f"num imgs: {len(imgs)}, num pair lists episode: {len(pair_lists_episode)}")
             assert len(imgs) == len(pair_lists_episode)
         else:
             imgs, cam_info = None, None
@@ -303,6 +306,7 @@ def rollout(config, epoch, viz=False):
     if epoch == 'latest':
         checkpoint_dir = os.path.join(train_config['out_dir'], data_name, 'checkpoints', 'latest.pth')
     else:
+        #checkpoint_dir = os.path.join(train_config['out_dir'], data_name, 'checkpoints', 'model_100.pth')
         checkpoint_dir = os.path.join(train_config['out_dir'], data_name, 'checkpoints', 'model_{}.pth'.format(epoch))
     
     print("checkpoint_dir: ", checkpoint_dir) 
