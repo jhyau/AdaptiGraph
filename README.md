@@ -40,6 +40,12 @@ We recommend installing the packages in the following order:
 conda create -n python=3.9 adaptigraph
 conda activate adaptigraph
 
+# Note: dgl and torch installation may cause some problems, suggest install dgl first with the torch version you're going to use
+# https://www.dgl.ai/pages/start.html
+# For pytorch 2.2.x, CUDA 12.1, pip installation for linux
+# If you have installed dgl-cuXX package, please uninstall it first.
+pip install  dgl -f https://data.dgl.ai/wheels/torch-2.2/cu121/repo.html
+
 # install PyTorch. We use 2.2.1+cu121 as an example:
 pip install torch==2.2.1 torchvision==0.17.1 torchaudio==2.2.1 --index-url https://download.pytorch.org/whl/cu121
 
@@ -72,7 +78,7 @@ gdown 1kN4trMTo5cavUqRSkYu0uzJq4mcL_ul_
 cd -
 
 # (optional) install additional packages for simulation data generation
-pip install pymunk beautifulsoup4 pybullet gym
+pip install pymunk beautifulsoup4 pybullet gym h5py lxml
 ```
 
 ### Install PyFleX (optional)
