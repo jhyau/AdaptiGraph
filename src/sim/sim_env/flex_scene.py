@@ -24,6 +24,9 @@ class FlexScene:
         elif self.obj == "cloth":
             self.env_idx = 29
             self.scene_params, self.property_params = cloth_scene()
+        elif self.obj == "softbody":
+            self.env_idx = 6
+            self.scene_params, self.property_params = softbody_scene()
         else:
             raise ValueError("Unknown Scene.")
         

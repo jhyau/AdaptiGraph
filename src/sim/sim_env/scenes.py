@@ -174,3 +174,15 @@ def cloth_scene():
                         }
 
         return scene_params, property_params
+
+def softbody_scene():
+    particle_r = 0.03
+
+    """
+    radius
+    dynamicFriction
+    particleFriction
+    numIterations
+    collisionDistance
+    relaxationFactor
+    """
