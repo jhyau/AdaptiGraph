@@ -9,7 +9,8 @@ from dynamics.utils import rgb_colormap, pad, pad_torch
 from dynamics.dataset.graph import fps, construct_edges_from_states
 from sim.data_gen.data import load_data
 
-def moviepy_merge_video(image_path, image_type, out_path, fps=20):    
+def moviepy_merge_video(image_path, image_type, out_path, fps=20):
+    print(f"moviepy merge image_path: {image_path}")
     # load images
     image_files = sorted([os.path.join(image_path, img) for img in os.listdir(image_path) if img.endswith(f'{image_type}.jpg')])
     # create a video clip from the images
@@ -20,7 +21,8 @@ def moviepy_merge_video(image_path, image_type, out_path, fps=20):
 def extract_imgs(dataset_config, episode_idx, cam=0):
     ## config
     data_name = dataset_config['data_name']
-    data_dir = os.path.join(dataset_config['data_dir'], data_name)
+    data_dir = os.path.join(dataset_config['data_dir'], data_name)#+"_set_action_first_try_100_epochs")
+    print(f"extract imgs data_dir: {data_dir}")
     
     ## load images
     imgs = []
@@ -400,10 +402,10 @@ def construct_graph(dataset_config, material_config, eef_pos, obj_pos,
     print(f"obj dim: {obj_dim}")
     # physics param is normalized between 0 and 1
     mat = None
-    # sort the particles by position (in order of x, y, z) then set the physics params for current time step
+    # sort the particles by position (in order of z, x, y) then set the physics params for current time step
     # sort the visible (keypoint) particles
     # fps_obj_kps takes the fps index points from obj_kp, then rest are padded to be zero. obj_kp_num of actual fps points
-    sort_by_pos = np.lexsort((fps_obj_kps[-1,:obj_kp_num,2], fps_obj_kps[-1,:obj_kp_num,1], fps_obj_kps[-1,:obj_kp_num,0]))
+    sort_by_pos = np.lexsort((fps_obj_kps[-1,:obj_kp_num,1], fps_obj_kps[-1,:obj_kp_num,0], fps_obj_kps[-1,:obj_kp_num,2]))
     print(f"sorted indices for fps: {sort_by_pos}")
     print(f"obj_kps only fps: {obj_kps[-1][fps_idx_list]}")
     print(f"obj_kps only fps sorted: {obj_kps[-1][fps_idx_list][sort_by_pos]}")
@@ -423,20 +425,20 @@ def construct_graph(dataset_config, material_config, eef_pos, obj_pos,
         physics_for_each_obj = np.zeros((obj_dim), dtype=np.float32)
         #physics_for_each_obj[:int(obj_dim/2)] = physics_param[material_name].numpy()
         #physics_for_each_obj[int(obj_dim/2):] = physics_param[material_name].numpy() + 1.0
-        #physics_for_each_obj[:] = physics_param[material_name].numpy() + 1.0
+        #physics_for_each_obj[:] = 2.0#physics_param[material_name].numpy() + 1.0
 
         # Half of the visualized particles, in sorted order
-        #physics_for_each_obj[sort_by_pos[:int(len(sort_by_pos)/2)]] = 0.0
-        #physics_for_each_obj[sort_by_pos[int(len(sort_by_pos)/2):]] = 2.0
+        physics_for_each_obj[sort_by_pos[:int(len(sort_by_pos)/2)]] = 0.0
+        physics_for_each_obj[sort_by_pos[int(len(sort_by_pos)/2):]] = 2.0
        
         # Set physics param based on some threshold of x position (e.g. if < x, then 0.0, else 2.0)
-        for i in range(obj_kp_num):
+        #for i in range(obj_kp_num):
             # Get the first particle from fps_obj_kps position
-            pos = fps_obj_kps[-1, i, :] #(3 dim vector)
-            if pos[2] < z_thres:
-                physics_for_each_obj[i] = 0.0
-            else:
-                physics_for_each_obj[i] = 2.0
+        #    pos = fps_obj_kps[-1, i, :] #(3 dim vector)
+        #    if pos[2] < z_thres:
+        #        physics_for_each_obj[i] = 0.0
+        #    else:
+        #        physics_for_each_obj[i] = 2.0
 
         # Split in half by visualized half, not sorted
         # fps_idx_list for list of farthest point sampled particles

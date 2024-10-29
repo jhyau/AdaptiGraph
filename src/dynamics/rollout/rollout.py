@@ -163,9 +163,11 @@ def rollout_episode_pushes(model, device, dataset_config, material_config,
     n_his = dataset_config['n_his']
     
     ## get steps
+    #pairs_path = os.path.join(dataset_config['prep_data_dir'], dataset_config['data_name']+"_set_action_first_try_100_epochs", 'frame_pairs')
     pairs_path = os.path.join(dataset_config['prep_data_dir'], dataset_config['data_name'], 'frame_pairs')
     pairs_list = sorted(list(glob.glob(os.path.join(pairs_path, f'{episode_idx:06}_*.txt'))))
     num_steps = len(pairs_list)
+    print(f"num steps: {num_steps}, pairs_path: {pairs_path}")
     
     error_list_pushes = []
     for i in range(num_steps):
@@ -284,7 +286,7 @@ def rollout_dataset(model, device, config, save_dir, viz):
         plt.savefig(os.path.join(save_dir, f'{save_name}.png'), dpi=300)
         plt.close()
 
-def rollout(config, epoch, viz=False):
+def rollout(config, epoch, ckpt_data_name, viz=False):
     ## config
     dataset_config = config['dataset_config']
     train_config = config['train_config']
@@ -299,15 +301,18 @@ def rollout(config, epoch, viz=False):
     out_dir = os.path.join(rollout_config['out_dir'])
     if "output_name" in dataset_config:
         save_dir = os.path.join(out_dir, f'rollout-{dataset_config["output_name"]}-model_{epoch}')
-        print("output_name save dir: ", save_dir)
+        #print("output_name save dir: ", save_dir)
     else:
         save_dir = os.path.join(out_dir, f'rollout-{data_name}-model_{epoch}')
+    print(f"save dir: {save_dir}")
     os.makedirs(save_dir, exist_ok=True)
     if epoch == 'latest':
-        checkpoint_dir = os.path.join(train_config['out_dir'], data_name, 'checkpoints', 'latest.pth')
+        #checkpoint_dir = os.path.join(train_config['out_dir'], data_name, 'checkpoints', 'latest.pth')
+        checkpoint_dir = os.path.join(train_config['out_dir'], ckpt_data_name, 'checkpoints', 'latest.pth')
     else:
         #checkpoint_dir = os.path.join(train_config['out_dir'], data_name, 'checkpoints', 'model_100.pth')
-        checkpoint_dir = os.path.join(train_config['out_dir'], data_name, 'checkpoints', 'model_{}.pth'.format(epoch))
+        #checkpoint_dir = os.path.join(train_config['out_dir'], data_name, 'checkpoints', 'model_{}.pth'.format(epoch))
+        checkpoint_dir = os.path.join(train_config['out_dir'], ckpt_data_name, 'checkpoints', 'model_{}.pth'.format(epoch))
     
     print("checkpoint_dir: ", checkpoint_dir) 
     ## load model
@@ -329,10 +334,11 @@ def rollout(config, epoch, viz=False):
 if __name__ == "__main__":
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument('--config', type=str, default='config/dynamics/rope.yaml')
+    arg_parser.add_argument('--ckpt_data_name', type=str, default='rope')
     arg_parser.add_argument('--epoch', type=str, default='100')
     arg_parser.add_argument('--viz', action='store_true')
     args = arg_parser.parse_args()
 
     config = load_yaml(args.config)
     
-    rollout(config, args.epoch, args.viz)
+    rollout(config, args.epoch, args.ckpt_data_name, args.viz)

@@ -25,6 +25,7 @@ def load_dataset(dataset_config, material_config, phase='train'):
     ratio = dataset_config['ratio']
 
     print("data dir for loading dataset: ", data_dir)
+    print(f"prep_dir for loading dataset: {prep_dir}")
     
     # episodes
     num_epis = len(sorted([f for f in os.listdir(data_dir) if os.path.isdir(os.path.join(data_dir, f)) and f.isdigit()]))
@@ -71,8 +72,9 @@ def load_dataset(dataset_config, material_config, phase='train'):
 def load_positions(dataset_config):
     ## config
     data_name = dataset_config['data_name']
-    prep_dir = os.path.join(dataset_config['prep_data_dir'], data_name)
-    
+    prep_dir = os.path.join(dataset_config['prep_data_dir'], data_name)#+"_set_action_first_try_100_epochs")
+    print(f"load_positions in load.py, prep_dir: {prep_dir}")
+
     ## load positions
     # ['eef_pos', 'obj_pos', 'phys_params']
     # eef_pos: (n_epis, T, N_eef, 3)
