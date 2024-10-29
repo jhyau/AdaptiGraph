@@ -177,12 +177,28 @@ def cloth_scene():
 
 def softbody_scene():
     particle_r = 0.03
-
     """
-    radius
-    dynamicFriction
-    particleFriction
-    numIterations
-    collisionDistance
-    relaxationFactor
+    https://github.com/jhyau/AdaptiGraph/blob/main/PyFleX/bindings/scenes/by_softbody.h
+    scale: for index [0,1,2]
+    trans: for index [3,4,5]
+    radius: index 6
+    clusterSpacing: index 7
+    clusterRadius: index 8
+    clusterStiffness: index 9
+    linkRadius: index 10
+    linkStiffness: index 11
+    globalStiffness: index 12
+    surfaceSampling: index 13
+    volumeSampling: index 14
+    skinningFalloff: index 15
+    skinningMaxDistance: index 16
+    clusterPlasticThreshold: index 17
+    clusterPlasticCreep: index 18
+    dynamicFriction: index 19
+    particleFriction: index 20
+    draw_mesh: index 21
+    relaxtion factor: index 22
+    rotate_v: index [23, 24, 25]
+    rotate_w: index 26
+    collisionDistance: index 27
     """
