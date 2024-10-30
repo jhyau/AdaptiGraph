@@ -257,7 +257,7 @@ def visualize_graph(imgs, cam_info,
 
 
 def construct_graph(dataset_config, material_config, eef_pos, obj_pos,
-                    n_his, pair, physics_param, physics_param_shift):
+                    n_his, pair, physics_param, prev_fps_idx_list=None):
     print("constructing graph for rollout...")
     ## config
     dataset = dataset_config['datasets'][0]
@@ -297,7 +297,13 @@ def construct_graph(dataset_config, material_config, eef_pos, obj_pos,
     ## Farthest point sampling for object particles
     # fps_obj_idx: (N_fps, )
     obj_kp_start = obj_kps[n_his-1] # (N_obj, 3)
-    fps_idx_list = fps(obj_kp_start, max_nobj, fps_radius)
+    # If want to only do fps once in the first time step and not sample for every time step
+    if prev_fps_idx_list is None:
+        fps_idx_list = fps(obj_kp_start, max_nobj, fps_radius)
+        print(f"running new fps index list: {fps_idx_list}")
+    else:
+        print(f"using previous fps index list: {prev_fps_idx_list}")
+        fps_idx_list = prev_fps_idx_list
     obj_kp_num = len(fps_idx_list)
     print(f"farthest point sampling idx list: {fps_idx_list}")
 

@@ -21,7 +21,7 @@ def gen_data(info):
     
     if save_data:
         # create folder
-        obj_dir = os.path.join(data_dir, obj+"_set_action_first_try_100_epochs")
+        obj_dir = os.path.join(data_dir, obj)
         epi_dir = os.path.join(obj_dir, f'{idx_episode:06}')
         os.makedirs(epi_dir, exist_ok=True)
 
@@ -56,8 +56,8 @@ def gen_data(info):
             # cam_intrinsic_params: (num_cameras, 4)
             # cam_extrinsic_matrix: (num_cameras, 4, 4)
             cam_intrinsic_params, cam_extrinsic_matrix = env.cam_intrinsic_params, env.cam_extrinsic_matrix
-            np.save(os.path.join(cam_dir, 'new_sim_intrinsic.npy'), cam_intrinsic_params)
-            np.save(os.path.join(cam_dir, 'new_sim_extrinsic.npy'), cam_extrinsic_matrix)
+            np.save(os.path.join(cam_dir, 'intrinsic.npy'), cam_intrinsic_params)
+            np.save(os.path.join(cam_dir, 'extrinsic.npy'), cam_extrinsic_matrix)
         
     # n_pushes
     color_threshold = dataset_config['color_threshold']
@@ -70,7 +70,8 @@ def gen_data(info):
         for k in range(10):
             u = None
             
-            if obj in ['cloth']:
+            if obj in ['cloth', 'softbody']:
+                # Use the grasping gripper
                 if idx_timestep == 0:
                     u, boundary_points, boundary = env.sample_action(init=True)
                 else:
@@ -97,6 +98,7 @@ def gen_data(info):
                 else:
                     u = np.array([0.2, 0.3, 0.0, 0.0])
             # write out to file the action
+            print(f"episode {idx_episode}, time step: {idx_timestep}, action: {u}")
             np.save(os.path.join(epi_dir, f'action_{idx_timestep:02}.npy'), u)
             
             if u is None:

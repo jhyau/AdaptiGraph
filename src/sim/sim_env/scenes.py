@@ -176,29 +176,106 @@ def cloth_scene():
         return scene_params, property_params
 
 def softbody_scene():
-    particle_r = 0.03
     """
     https://github.com/jhyau/AdaptiGraph/blob/main/PyFleX/bindings/scenes/by_softbody.h
-    scale: for index [0,1,2]
-    trans: for index [3,4,5]
-    radius: index 6
-    clusterSpacing: index 7
-    clusterRadius: index 8
-    clusterStiffness: index 9
-    linkRadius: index 10
-    linkStiffness: index 11
-    globalStiffness: index 12
-    surfaceSampling: index 13
-    volumeSampling: index 14
-    skinningFalloff: index 15
-    skinningMaxDistance: index 16
-    clusterPlasticThreshold: index 17
-    clusterPlasticCreep: index 18
-    dynamicFriction: index 19
-    particleFriction: index 20
-    draw_mesh: index 21
-    relaxtion factor: index 22
-    rotate_v: index [23, 24, 25]
-    rotate_w: index 26
-    collisionDistance: index 27
+    Scene params:
+        scale: for index [0,1,2]
+        trans: for index [3,4,5]
+        radius: index 6
+        clusterSpacing: index 7
+        clusterRadius: index 8
+        clusterStiffness: index 9
+        linkRadius: index 10
+        linkStiffness: index 11
+        globalStiffness: index 12
+        surfaceSampling: index 13
+        volumeSampling: index 14
+        skinningFalloff: index 15
+        skinningMaxDistance: index 16
+        clusterPlasticThreshold: index 17
+        clusterPlasticCreep: index 18
+        dynamicFriction: index 19
+        particleFriction: index 20
+        draw_mesh: index 21
+        relaxtion factor: index 22
+        rotate_v: index [23, 24, 25]
+        rotate_w: index 26
+        collisionDistance: index 27
     """
+    radius = 0.03
+
+    # softbody trans position
+    trans = [0., 0.5, 2.0] # [x, y, z]
+        
+    # softbody scale
+    edge_length = rand_float(2.5, 3.0)
+    print(f"edge_length: {edge_length}")
+    #rope_thickness = 3.0
+    scale = np.array([edge_length, edge_length, edge_length]) * 50
+    
+    # softbody stiffness
+    stiffness = np.random.rand()
+    print(f"softbody stiffness for uniform: {stiffness}")
+    if stiffness < 0.5:
+        global_stiffness = stiffness * 1e-4 / 0.5
+        cluster_spacing = 2 + 8 * stiffness
+    else:
+        global_stiffness = (stiffness - 0.5) * 4e-4 + 1e-4
+        cluster_spacing = 6 + 4 * (stiffness - 0.5)
+    
+    # softbody frtction
+    dynamicFriction = 0.1
+        
+    # softbody rotation
+    x_rotation = 45.
+    z_rotation = rand_float(10, 20) 
+    y_rotation = 90. 
+    rot_1 = Rotation.from_euler('xyz', [0, y_rotation, 0.], degrees=True)
+    rotate_1 = rot_1.as_quat()
+    rot_2 = Rotation.from_euler('xyz', [0, 0, z_rotation], degrees=True)
+    rotate_2 = rot_2.as_quat()
+    first_rotate = quaternion_multuply(rotate_1, rotate_2)
+    rot_3 = Rotation.from_euler('xyz', [x_rotation, 0, 0], degrees=True)
+    rotate_3 = rot_3.as_quat()
+    rotate = quaternion_multuply(first_rotate, rotate_3)
+    
+    # others (usually fixed)
+    cluster_radius = 10.
+    cluster_stiffness = 0.55
+
+    link_radius = 0. 
+    link_stiffness = 1.
+
+    surface_sampling = 0.
+    volume_sampling = 4.
+
+    skinning_falloff = 5.
+    skinning_max_dist = 100.
+
+    cluster_plastic_threshold = 10.
+    cluster_plastic_creep = 1.
+
+    particleFriction = 0.25
+    
+    draw_mesh = 1
+
+    relaxtion_factor = 1.
+    collisionDistance = radius * 0.5
+    
+    # params
+    scene_params = np.array([*scale, *trans, radius, 
+                            cluster_spacing, cluster_radius, cluster_stiffness,
+                            link_radius, link_stiffness, global_stiffness,
+                            surface_sampling, volume_sampling, skinning_falloff, skinning_max_dist,
+                            cluster_plastic_threshold, cluster_plastic_creep,
+                            dynamicFriction, particleFriction, draw_mesh, relaxtion_factor, 
+                            *rotate, collisionDistance])
+    
+    property_params = {'particle_radius': radius,
+                    'cluster_radius': cluster_radius,
+                    'dynamic_friction': dynamicFriction,
+                    'cluster_spacing': cluster_spacing,
+                    "global_stiffness": global_stiffness,
+                    "stiffness": stiffness,}
+    
+    return scene_params, property_params

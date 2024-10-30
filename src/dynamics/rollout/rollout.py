@@ -159,7 +159,7 @@ def rollout_from_start_graph(graph, fps_idx_list, dataset_config, material_confi
 
 def rollout_episode_pushes(model, device, dataset_config, material_config,
                         eef_pos, obj_pos, episode_idx, pairs, physics_param,
-                        save_dir, viz, imgs, cam_info):
+                        save_dir, viz, imgs, cam_info, keep_prev_fps):
     n_his = dataset_config['n_his']
     
     ## get steps
@@ -170,6 +170,7 @@ def rollout_episode_pushes(model, device, dataset_config, material_config,
     print(f"num steps: {num_steps}, pairs_path: {pairs_path}")
     
     error_list_pushes = []
+    prev_fps_idx_list = None
     for i in range(num_steps):
         valid_pairs = np.loadtxt(pairs_list[i]).astype(int)
         pair = valid_pairs[0] 
@@ -180,10 +181,13 @@ def rollout_episode_pushes(model, device, dataset_config, material_config,
         obj_pos_epi = obj_pos[episode_idx] # (T, N_obj, 3)
     
         ## construct graph
-        physics_param_shift = i
         graph, fps_idx_list = construct_graph(dataset_config, material_config, eef_pos_epi, obj_pos_epi,
-                                        n_his, pair, physics_param, physics_param_shift)
+                                        n_his, pair, physics_param, prev_fps_idx_list=prev_fps_idx_list)
     
+        # Use the same fps indices after the first sampling
+        if keep_prev_fps:
+            print("using the same fps index list")
+            prev_fps_idx_list = fps_idx_list
         ## rollout from start
         error_list = rollout_from_start_graph(graph, fps_idx_list, dataset_config, material_config,
                                           model, device, eef_pos_epi, obj_pos_epi,
@@ -217,7 +221,7 @@ def rollout_episode_pushes(model, device, dataset_config, material_config,
     
     return error_list_pushes
 
-def rollout_dataset(model, device, config, save_dir, viz):
+def rollout_dataset(model, device, config, save_dir, viz, keep_prev_fps):
     ## config
     dataset_config = config['dataset_config']
     material_config = config['material_config']
@@ -251,7 +255,7 @@ def rollout_dataset(model, device, config, save_dir, viz):
         error_list_short = rollout_episode_pushes(model, device, dataset_config, material_config,
                                         eef_pos, obj_pos, episode_idx,
                                         pair_lists_episode, physics_params_episode,
-                                        save_dir_episode_pushes, viz, imgs, cam_info)
+                                        save_dir_episode_pushes, viz, imgs, cam_info, keep_prev_fps)
         total_error_short.extend(error_list_short)
     
     ## final statistics
@@ -286,7 +290,7 @@ def rollout_dataset(model, device, config, save_dir, viz):
         plt.savefig(os.path.join(save_dir, f'{save_name}.png'), dpi=300)
         plt.close()
 
-def rollout(config, epoch, ckpt_data_name, viz=False):
+def rollout(config, epoch, ckpt_data_name, viz=False, keep_prev_fps=False):
     ## config
     dataset_config = config['dataset_config']
     train_config = config['train_config']
@@ -329,7 +333,7 @@ def rollout(config, epoch, ckpt_data_name, viz=False):
     model.load_state_dict(torch.load(checkpoint_dir, map_location=device))
     
     ## rollout dataset
-    rollout_dataset(model, device, config, save_dir, viz)
+    rollout_dataset(model, device, config, save_dir, viz, keep_prev_fps)
     
 if __name__ == "__main__":
     arg_parser = argparse.ArgumentParser()
@@ -337,8 +341,9 @@ if __name__ == "__main__":
     arg_parser.add_argument('--ckpt_data_name', type=str, default='rope')
     arg_parser.add_argument('--epoch', type=str, default='100')
     arg_parser.add_argument('--viz', action='store_true')
+    arg_parser.add_argument('--keep_prev_fps', action='store_true')
     args = arg_parser.parse_args()
 
     config = load_yaml(args.config)
     
-    rollout(config, args.epoch, args.ckpt_data_name, args.viz)
+    rollout(config, args.epoch, args.ckpt_data_name, args.viz, keep_prev_fps=args.keep_prev_fps)
