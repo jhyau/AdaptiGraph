@@ -84,8 +84,8 @@ rollout_config:
 
 material_config:
   material_index:
-    rope: 0
-  rope:
+    softbody: 0
+  softbody:
     physics_params: 
       - name: "particle_radius"
         use: False

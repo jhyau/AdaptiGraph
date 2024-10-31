@@ -144,8 +144,8 @@ def preprocess(config):
     data_name = dataset_config['data_name']
     eef_dataset = dataset_config['eef']
     
-    data_dir = os.path.join(dataset_config['data_dir'], data_name+"_set_action_first_try_100_epochs")
-    save_dir = os.path.join(dataset_config['prep_data_dir'], data_name+"_set_action_first_try_100_epochs")
+    data_dir = os.path.join(dataset_config['data_dir'], data_name)
+    save_dir = os.path.join(dataset_config['prep_data_dir'], data_name)
     push_save_dir = os.path.join(save_dir, 'frame_pairs')
     os.makedirs(push_save_dir, exist_ok=True)
     
