@@ -72,6 +72,7 @@ def gen_data(info):
             
             if obj in ['cloth', 'softbody']:
                 # Use the grasping gripper
+                print("grasping action")
                 if idx_timestep == 0:
                     u, boundary_points, boundary = env.sample_action(init=True)
                 else:

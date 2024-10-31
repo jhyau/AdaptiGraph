@@ -227,20 +227,20 @@ def softbody_scene():
     dynamicFriction = 0.1
         
     # softbody rotation
-    x_rotation = 45.
-    z_rotation = rand_float(10, 20) 
+    #x_rotation = 45.
+    z_rotation = rand_float(10, 20)
     y_rotation = 90. 
     rot_1 = Rotation.from_euler('xyz', [0, y_rotation, 0.], degrees=True)
     rotate_1 = rot_1.as_quat()
     rot_2 = Rotation.from_euler('xyz', [0, 0, z_rotation], degrees=True)
     rotate_2 = rot_2.as_quat()
-    first_rotate = quaternion_multuply(rotate_1, rotate_2)
-    rot_3 = Rotation.from_euler('xyz', [x_rotation, 0, 0], degrees=True)
-    rotate_3 = rot_3.as_quat()
-    rotate = quaternion_multuply(first_rotate, rotate_3)
+    #first_rotate = quaternion_multuply(rotate_1, rotate_2)
+    #rot_3 = Rotation.from_euler('xyz', [x_rotation, 0, 0], degrees=True)
+    #rotate_3 = rot_3.as_quat()
+    rotate = quaternion_multuply(rotate_1, rotate_2)
     
     # others (usually fixed)
-    cluster_radius = 10.
+    cluster_radius = 0.
     cluster_stiffness = 0.55
 
     link_radius = 0. 
@@ -252,8 +252,8 @@ def softbody_scene():
     skinning_falloff = 5.
     skinning_max_dist = 100.
 
-    cluster_plastic_threshold = 10.
-    cluster_plastic_creep = 1.
+    cluster_plastic_threshold = 0.
+    cluster_plastic_creep = 0.
 
     particleFriction = 0.25
     
