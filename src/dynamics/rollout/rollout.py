@@ -117,6 +117,7 @@ def rollout_from_start_graph(graph, fps_idx_list, dataset_config, material_confi
                                                  mask=graph['state_mask'][0],
                                                  tool_mask=graph['eef_mask'][0],
                                                  topk=topk, connect_tools_all=connect_tool_all)
+            print(f"max_nR: {max_nR}, Rr size: {Rr.size()}, Rs size: {Rs.size()}")
             Rr = pad_torch(Rr, max_nR)
             Rs = pad_torch(Rs, max_nR)
             
