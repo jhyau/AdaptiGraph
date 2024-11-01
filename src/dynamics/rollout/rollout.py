@@ -172,6 +172,7 @@ def rollout_episode_pushes(model, device, dataset_config, material_config,
     
     error_list_pushes = []
     prev_fps_idx_list = None
+    fps2phys = None
     for i in range(num_steps):
         valid_pairs = np.loadtxt(pairs_list[i]).astype(int)
         pair = valid_pairs[0] 
@@ -182,13 +183,14 @@ def rollout_episode_pushes(model, device, dataset_config, material_config,
         obj_pos_epi = obj_pos[episode_idx] # (T, N_obj, 3)
     
         ## construct graph
-        graph, fps_idx_list = construct_graph(dataset_config, material_config, eef_pos_epi, obj_pos_epi,
-                                        n_his, pair, physics_param, prev_fps_idx_list=prev_fps_idx_list)
+        graph, fps_idx_list, fps2phys = construct_graph(dataset_config, material_config, eef_pos_epi, obj_pos_epi,
+                                        n_his, pair, physics_param, prev_fps_idx_list=prev_fps_idx_list, fps2phys=fps2phys)
     
         # Use the same fps indices after the first sampling
         if keep_prev_fps:
             print("using the same fps index list")
             prev_fps_idx_list = fps_idx_list
+            fps2phys = fps2phys
         ## rollout from start
         error_list = rollout_from_start_graph(graph, fps_idx_list, dataset_config, material_config,
                                           model, device, eef_pos_epi, obj_pos_epi,

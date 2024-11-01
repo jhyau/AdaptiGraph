@@ -257,7 +257,7 @@ def visualize_graph(imgs, cam_info,
 
 
 def construct_graph(dataset_config, material_config, eef_pos, obj_pos,
-                    n_his, pair, physics_param, prev_fps_idx_list=None):
+                    n_his, pair, physics_param, prev_fps_idx_list=None, fps2phys=None):
     print("constructing graph for rollout...")
     ## config
     dataset = dataset_config['datasets'][0]
@@ -422,6 +422,16 @@ def construct_graph(dataset_config, material_config, eef_pos, obj_pos,
     # particles are sampled, and the rest are padded to reach the max_nobj (100 for rope for example)
     x_thres = 0.1
     z_thres = 0.1
+    # Create map of fps particle idx to physics param
+    if fps2phys is None:
+        print("setting fps2phys only ONCE!!!!")
+        fps2phys = {}
+        half = int(len(sort_by_pos)/2)
+        for i,idx in enumerate(list(sort_by_pos)):
+            if i < half:
+                fps2phys[idx] = 0.0
+            else:
+                fps2phys[idx] = 2.0
     for material_name in physics_param.keys():
         #graph[material_name + '_physics_param'] = physics_param[material_name]
         print(f"material: {material_name}, original physics_param: {physics_param[material_name]}")
@@ -434,8 +444,14 @@ def construct_graph(dataset_config, material_config, eef_pos, obj_pos,
         #physics_for_each_obj[:] = 2.0#physics_param[material_name].numpy() + 1.0
 
         # Half of the visualized particles, in sorted order
-        physics_for_each_obj[sort_by_pos[:int(len(sort_by_pos)/2)]] = 0.0
-        physics_for_each_obj[sort_by_pos[int(len(sort_by_pos)/2):]] = 2.0
+        if fps2phys is not None:
+            print(f"mapping fps index to physics param")
+            print(fps2phys)
+            for key in fps2phys:
+                physics_for_each_obj[key] = fps2phys[key]
+        else:
+            physics_for_each_obj[sort_by_pos[:int(len(sort_by_pos)/2)]] = 0.0
+            physics_for_each_obj[sort_by_pos[int(len(sort_by_pos)/2):]] = 2.0
        
         # Set physics param based on some threshold of x position (e.g. if < x, then 0.0, else 2.0)
         #for i in range(obj_kp_num):
@@ -463,7 +479,7 @@ def construct_graph(dataset_config, material_config, eef_pos, obj_pos,
     print(f"new _physics_param: {graph[mat+'_physics_param']}, size: {graph[mat+'_physics_param'].size()}")
     ### finish constructing graph ###
     print("graph keys: ", graph.keys())
-    return graph, fps_idx_list
+    return graph, fps_idx_list, fps2phys
 
 def get_next_pair_or_break_episode(pairs, n_his, n_frames, current_end):
     # find next pair
