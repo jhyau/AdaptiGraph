@@ -70,7 +70,7 @@ def gen_data(info):
         for k in range(10):
             u = None
             
-            if obj in ['cloth', 'softbody']:
+            if obj in ['cloth']: #'softbody'
                 # Use the grasping gripper
                 print("grasping action")
                 if idx_timestep == 0:
@@ -78,26 +78,26 @@ def gen_data(info):
                 else:
                     u, boundary_points, boundary = env.sample_action(boundary_points=boundary_points, boundary=boundary)
             else:
-                #u = env.sample_action() # [x_start, z_start, x_end, z_end]
+                u = env.sample_action() # [x_start, z_start, x_end, z_end]
                 # hard set the start and end to be a specific action
-                print("data gen, hard set action")
-                if idx_timestep % 5 == 0:
-                    u = np.array([0.0, 0.0, 0.55, 0.1])
-                    #u = np.array([0.1, 0.0, 0.3, 0.0])
-                elif idx_timestep % 5 == 1:
-                    u = np.array([0.55, 0.1, 0.55, 0.6])
-                    #u = np.array([0.3, 0.0, -0.2, 0.0])
-                elif idx_timestep % 5 == 2:
-                    u = np.array([0.55, 0.6, 1.0, 0.6])
-                    #u = np.array([-0.2, 0.0, -0.2, 0.1])
-                elif idx_timestep % 5 == 3:
-                    u = np.array([1.0, 0.6, 1.0, 0.1])
-                    #u = np.array([-0.2, 0.1, 0.0, 0.05])
-                elif idx_timestep % 5 == 4:
-                    u = np.array([1.0, 0.1, 0.01, 0.3])
-                    #u = np.array([0.0, 0.05, 0.2, 0.3])
-                else:
-                    u = np.array([0.2, 0.3, 0.0, 0.0])
+                # print("data gen, hard set action")
+                # if idx_timestep % 5 == 0:
+                #     u = np.array([0.0, 0.0, 0.55, 0.1])
+                #     #u = np.array([0.1, 0.0, 0.3, 0.0])
+                # elif idx_timestep % 5 == 1:
+                #     u = np.array([0.55, 0.1, 0.55, 0.6])
+                #     #u = np.array([0.3, 0.0, -0.2, 0.0])
+                # elif idx_timestep % 5 == 2:
+                #     u = np.array([0.55, 0.6, 1.0, 0.6])
+                #     #u = np.array([-0.2, 0.0, -0.2, 0.1])
+                # elif idx_timestep % 5 == 3:
+                #     u = np.array([1.0, 0.6, 1.0, 0.1])
+                #     #u = np.array([-0.2, 0.1, 0.0, 0.05])
+                # elif idx_timestep % 5 == 4:
+                #     u = np.array([1.0, 0.1, 0.01, 0.3])
+                #     #u = np.array([0.0, 0.05, 0.2, 0.3])
+                # else:
+                #     u = np.array([0.2, 0.3, 0.0, 0.0])
             # write out to file the action
             print(f"episode {idx_episode}, time step: {idx_timestep}, action: {u}")
             np.save(os.path.join(epi_dir, f'action_{idx_timestep:02}.npy'), u)
