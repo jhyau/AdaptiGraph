@@ -114,7 +114,7 @@ class FlexEnv(gym.Env):
         self.table_shape_states[0] = np.concatenate([center, center, quats, quats])
         
         # table for robot
-        if self.obj in ['cloth']: #'softbody'
+        if self.obj in ['cloth', 'softbody']: #'softbody'
             robot_table_height = 0.5 + 1.0
         else:
             robot_table_height = 0.5 + 0.3
@@ -136,14 +136,14 @@ class FlexEnv(gym.Env):
             self.robotId = pyflex.loadURDF(self.flex_robot_helper, 'sim/assets/xarm/xarm6_with_gripper_board.urdf', 
                                            robot_base_pos, robot_base_orn, globalScaling=10.0) 
             self.rest_joints = np.zeros(8)
-        elif self.obj in ['rope', 'softbody']:
+        elif self.obj in ['rope']:
             # stick pusher
             robot_base_pos = [-self.wkspace_width-0.6, 0., self.wkspace_height+0.3]
             robot_base_orn = [0, 0, 0, 1]
             self.robotId = pyflex.loadURDF(self.flex_robot_helper, 'sim/assets/xarm/xarm6_with_gripper.urdf', 
                                            robot_base_pos, robot_base_orn, globalScaling=10.0) 
             self.rest_joints = np.zeros(8)
-        elif self.obj in ['cloth']: #'softbody'
+        elif self.obj in ['cloth', 'softbody']: #'softbody'
             # gripper
             robot_base_pos = [-self.wkspace_width-0.6, 0., self.wkspace_height+1.0]
             robot_base_orn = [0, 0, 0, 1]
@@ -416,10 +416,10 @@ class FlexEnv(gym.Env):
         pyflex.clean()
     
     def sample_action(self, init=False, boundary_points=None, boundary=None):
-        if self.obj in ['rope', 'granular', 'softbody']:
+        if self.obj in ['rope', 'granular']:
             action = self.sample_deform_actions()
             return action
-        elif self.obj in ['cloth']: #'softbody'
+        elif self.obj in ['cloth', 'softbody']: #'softbody'
             action, boundary_points, boundary = self.sample_grasp_actions_corner(init, boundary_points, boundary)
             return action, boundary_points, boundary
         else:
