@@ -20,7 +20,7 @@ from dynamics.dataset.graph import construct_edges_from_states
 def rollout_from_start_graph(graph, fps_idx_list, dataset_config, material_config,
                              model, device, eef_pos, obj_pos,
                              current_start, current_end, get_next_pair_or_break_func,
-                             pairs, save_dir, viz, imgs, cam_info):
+                             pairs, save_dir, viz, imgs, cam_info, hetero):
 
     obj_mask = graph['obj_mask'].numpy()
     obj_kp_num = obj_mask.sum()
@@ -60,7 +60,8 @@ def rollout_from_start_graph(graph, fps_idx_list, dataset_config, material_confi
         
         pred_kp_proj_last, gt_kp_proj_last, gt_lineset, pred_lineset = \
             visualize_graph(imgs, cam_info, kp_vis, kp_vis, eef_kp, Rr, Rs,
-                            current_start, current_end, 0, save_dir, max_nobj, physics_param=physics_param)
+                            current_start, current_end, 0, save_dir, max_nobj, physics_param=physics_param,
+                            hetero=hetero)
 
     ## prepare graph
     graph = {key: graph[key].unsqueeze(0).to(device) for key in graph.keys()}
@@ -154,13 +155,14 @@ def rollout_from_start_graph(graph, fps_idx_list, dataset_config, material_confi
                                 current_start, current_end, i, save_dir, max_nobj,
                                 gt_lineset=gt_lineset, pred_lineset=pred_lineset,
                                 pred_kp_proj_last=pred_kp_proj_last, gt_kp_proj_last=gt_kp_proj_last,
-                                physics_param=graph[mat_name][:, :obj_kp_num].detach().cpu().numpy())
+                                physics_param=graph[mat_name][:, :obj_kp_num].detach().cpu().numpy(),
+                                hetero=hetero)
                 
     return error_list
 
 def rollout_episode_pushes(model, device, dataset_config, material_config,
                         eef_pos, obj_pos, episode_idx, pairs, physics_param,
-                        save_dir, viz, imgs, cam_info, keep_prev_fps):
+                        save_dir, viz, imgs, cam_info, keep_prev_fps, hetero):
     n_his = dataset_config['n_his']
     
     ## get steps
@@ -184,7 +186,8 @@ def rollout_episode_pushes(model, device, dataset_config, material_config,
     
         ## construct graph
         graph, fps_idx_list, fps2phys = construct_graph(dataset_config, material_config, eef_pos_epi, obj_pos_epi,
-                                        n_his, pair, physics_param, prev_fps_idx_list=prev_fps_idx_list, fps2phys=fps2phys)
+                                        n_his, pair, physics_param, prev_fps_idx_list=prev_fps_idx_list, fps2phys=fps2phys,
+                                        hetero=hetero)
     
         # Use the same fps indices after the first sampling
         if keep_prev_fps:
@@ -195,7 +198,7 @@ def rollout_episode_pushes(model, device, dataset_config, material_config,
         error_list = rollout_from_start_graph(graph, fps_idx_list, dataset_config, material_config,
                                           model, device, eef_pos_epi, obj_pos_epi,
                                           start, end, get_next_pair_or_break_episode_pushes,
-                                          pairs, save_dir, viz, imgs, cam_info)
+                                          pairs, save_dir, viz, imgs, cam_info, hetero)
         
         error_list_pushes.append(error_list)
         
@@ -224,7 +227,7 @@ def rollout_episode_pushes(model, device, dataset_config, material_config,
     
     return error_list_pushes
 
-def rollout_dataset(model, device, config, save_dir, viz, keep_prev_fps):
+def rollout_dataset(model, device, config, save_dir, viz, keep_prev_fps, hetero):
     ## config
     dataset_config = config['dataset_config']
     material_config = config['material_config']
@@ -258,7 +261,7 @@ def rollout_dataset(model, device, config, save_dir, viz, keep_prev_fps):
         error_list_short = rollout_episode_pushes(model, device, dataset_config, material_config,
                                         eef_pos, obj_pos, episode_idx,
                                         pair_lists_episode, physics_params_episode,
-                                        save_dir_episode_pushes, viz, imgs, cam_info, keep_prev_fps)
+                                        save_dir_episode_pushes, viz, imgs, cam_info, keep_prev_fps, hetero)
         total_error_short.extend(error_list_short)
     
     ## final statistics
@@ -293,7 +296,7 @@ def rollout_dataset(model, device, config, save_dir, viz, keep_prev_fps):
         plt.savefig(os.path.join(save_dir, f'{save_name}.png'), dpi=300)
         plt.close()
 
-def rollout(config, epoch, ckpt_data_name, viz=False, keep_prev_fps=False):
+def rollout(config, epoch, ckpt_data_name, viz=False, keep_prev_fps=False, hetero=False):
     ## config
     dataset_config = config['dataset_config']
     train_config = config['train_config']
@@ -336,7 +339,7 @@ def rollout(config, epoch, ckpt_data_name, viz=False, keep_prev_fps=False):
     model.load_state_dict(torch.load(checkpoint_dir, map_location=device))
     
     ## rollout dataset
-    rollout_dataset(model, device, config, save_dir, viz, keep_prev_fps)
+    rollout_dataset(model, device, config, save_dir, viz, keep_prev_fps, hetero)
     
 if __name__ == "__main__":
     arg_parser = argparse.ArgumentParser()
@@ -344,9 +347,10 @@ if __name__ == "__main__":
     arg_parser.add_argument('--ckpt_data_name', type=str, default='rope')
     arg_parser.add_argument('--epoch', type=str, default='100')
     arg_parser.add_argument('--viz', action='store_true')
-    arg_parser.add_argument('--keep_prev_fps', action='store_true')
+    arg_parser.add_argument('--keep_prev_fps', action='store_true') # set this flag to keep FPS indices for all time steps
+    arg_parser.add_argument('--hetero', action='store_true') # set this flag to change to hetero phys params for rollout
     args = arg_parser.parse_args()
 
     config = load_yaml(args.config)
     
-    rollout(config, args.epoch, args.ckpt_data_name, args.viz, keep_prev_fps=args.keep_prev_fps)
+    rollout(config, args.epoch, args.ckpt_data_name, args.viz, keep_prev_fps=args.keep_prev_fps, hetero=args.hetero)

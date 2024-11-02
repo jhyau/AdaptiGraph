@@ -48,7 +48,7 @@ def visualize_graph(imgs, cam_info,
         start, end, vis_t, save_dir, max_nobj,
         colormap=None, point_size=4, edge_size=1, line_size=2, line_alpha=0.5, t_line=5,
         gt_lineset=None, pred_lineset=None, 
-        pred_kp_proj_last=None, gt_kp_proj_last=None, physics_param=None):
+        pred_kp_proj_last=None, gt_kp_proj_last=None, physics_param=None, hetero=False):
     
     if colormap is None:
         colormap = rgb_colormap(repeat=100)
@@ -129,20 +129,24 @@ def visualize_graph(imgs, cam_info,
     
     #print(f"{int(colormap[0, 2])}, {int(colormap[0, 1])}, {int(colormap[0, 0])}")
     #print("num colors: ", len(phys2color))
-    print(phys2color)
-    with open(os.path.join(save_dir,  f'{start:06}_{end:06}_pred_phys_param_color_map.txt'), "w") as f:
-        for key in phys2color.keys():
-            f.write(f"physics param value: {key}, color: {phys2color[key]}\n")
+    #print(phys2color)
+    #with open(os.path.join(save_dir,  f'{start:06}_{end:06}_pred_phys_param_color_map.txt'), "w") as f:
+    #    for key in phys2color.keys():
+    #        f.write(f"physics param value: {key}, color: {phys2color[key]}\n")
 
     color_step = int(255 / len(phys2color))
     for k in range(obj_kp_proj.shape[0]):
-        phys_param = physics_param.squeeze()[k]
-        col = phys2color[phys_param]
-        print(f"visualizing obj particles, phys param: {phys_param}, color: {col}")
-        cv2.circle(img, (int(obj_kp_proj[k, 0]), int(obj_kp_proj[k, 1])), point_size,
-             col , -1)
-            #(col*color_step, 0, 0), -1)
-            #(int(colormap[k, 2]), int(colormap[k, 1]), int(colormap[k, 0])), -1)
+        if hetero:
+            phys_param = physics_param.squeeze()[k]
+            col = phys2color[phys_param]
+            print(f"visualizing obj particles, phys param: {phys_param}, color: {col}")
+            cv2.circle(img, (int(obj_kp_proj[k, 0]), int(obj_kp_proj[k, 1])), point_size,
+                #(col*color_step, 0, 0), -1)
+                col , -1)
+        else:
+            print(f"homogeneous color for all obj particles")
+            cv2.circle(img, (int(obj_kp_proj[k, 0]), int(obj_kp_proj[k, 1])), point_size,    
+                (int(colormap[k, 2]), int(colormap[k, 1]), int(colormap[k, 0])), -1)
 
     # also visualize tool in red
     for k in range(tool_kp_proj.shape[0]):
@@ -257,8 +261,10 @@ def visualize_graph(imgs, cam_info,
 
 
 def construct_graph(dataset_config, material_config, eef_pos, obj_pos,
-                    n_his, pair, physics_param, prev_fps_idx_list=None, fps2phys=None):
+                    n_his, pair, physics_param, prev_fps_idx_list=None, fps2phys=None, hetero=False):
     print("constructing graph for rollout...")
+    # prev_fps_idx_list will not be None if using the same FPS indices for all time steps. It's the list of FPS indices
+    # fps2phys will not be None if using prev_fps_idx_list, it will map each fps idx to phys param once (sorts by z,x,y)
     ## config
     dataset = dataset_config['datasets'][0]
     max_nobj = dataset['max_nobj']
@@ -422,8 +428,8 @@ def construct_graph(dataset_config, material_config, eef_pos, obj_pos,
     # particles are sampled, and the rest are padded to reach the max_nobj (100 for rope for example)
     x_thres = 0.1
     z_thres = 0.1
-    # Create map of fps particle idx to physics param
-    if fps2phys is None:
+    # Create map of fps particle idx to physics param, only if heterogeneous phys params
+    if fps2phys is None and hetero:
         print("setting fps2phys only ONCE!!!!")
         fps2phys = {}
         half = int(len(sort_by_pos)/2)
@@ -441,17 +447,19 @@ def construct_graph(dataset_config, material_config, eef_pos, obj_pos,
         physics_for_each_obj = np.zeros((obj_dim), dtype=np.float32)
         #physics_for_each_obj[:int(obj_dim/2)] = physics_param[material_name].numpy()
         #physics_for_each_obj[int(obj_dim/2):] = physics_param[material_name].numpy() + 1.0
-        #physics_for_each_obj[:] = 2.0#physics_param[material_name].numpy() + 1.0
-
-        # Half of the visualized particles, in sorted order
-        if fps2phys is not None:
-            print(f"mapping fps index to physics param")
-            print(fps2phys)
-            for key in fps2phys:
-                physics_for_each_obj[key] = fps2phys[key]
+        if not hetero:
+            # Use homogeneous physics param
+            physics_for_each_obj[:] = physics_param[material_name].numpy()
         else:
-            physics_for_each_obj[sort_by_pos[:int(len(sort_by_pos)/2)]] = 0.0
-            physics_for_each_obj[sort_by_pos[int(len(sort_by_pos)/2):]] = 2.0
+            # Half of the visualized particles, in sorted order
+            if fps2phys is not None:
+                print(f"mapping fps index to physics param")
+                print(fps2phys)
+                for key in fps2phys:
+                    physics_for_each_obj[key] = fps2phys[key]
+            else:
+                physics_for_each_obj[sort_by_pos[:int(len(sort_by_pos)/2)]] = 0.0
+                physics_for_each_obj[sort_by_pos[int(len(sort_by_pos)/2):]] = 2.0
        
         # Set physics param based on some threshold of x position (e.g. if < x, then 0.0, else 2.0)
         #for i in range(obj_kp_num):

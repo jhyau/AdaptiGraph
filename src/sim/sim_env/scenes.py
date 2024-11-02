@@ -211,7 +211,7 @@ def softbody_scene():
     edge_length = rand_float(2.5, 3.0)
     print(f"edge_length: {edge_length}")
     #rope_thickness = 3.0
-    scale = np.array([edge_length, edge_length, edge_length]) * 50
+    scale = np.array([edge_length, edge_length, edge_length]) * 10 #* 50
     
     # softbody stiffness
     stiffness = np.random.rand()
