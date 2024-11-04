@@ -4,9 +4,9 @@ dataset:
 
   # data collection
   base: 0
-  n_episode: 1000
+  n_episode: 5
   n_timestep: 5
-  n_worker: 4
+  n_worker: 5
   
   # sim env
   headless: True # False: OpenGL visualization

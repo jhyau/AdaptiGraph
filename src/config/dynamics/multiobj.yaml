@@ -92,8 +92,8 @@ rollout_config:
 
 material_config:
   material_index:
-    softbody: 0
-  softbody:
+    multiobj: 0
+  multiobj:
     physics_params: 
       - name: "particle_radius"
         use: False
