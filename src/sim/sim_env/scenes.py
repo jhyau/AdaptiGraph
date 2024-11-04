@@ -279,3 +279,27 @@ def softbody_scene():
                     "stiffness": stiffness,}
     
     return scene_params, property_params
+
+def yz_bunnybath_scene():
+    # By default, the bunnybath.h scene doesn't take in scene params
+    # so we use yz_bunnybath.h instead
+    # It currently doesn't use the scene_params though, would need to make changes to allow that
+    radius = 0.1
+    dynamicFriction = 0.01
+    viscosity = 2.0
+
+    # deforming bunny params
+    s = radius*0.5
+    m = 0.25
+
+    cohesion = 0.02
+    collisionDistance = 0.01
+    scene_params = np.array([0])
+    property_params = {'particle_radius': radius,
+                    'viscosity': viscosity,
+                    'dynamic_friction': dynamicFriction,
+                    's': s,
+                    'm': m,
+                    'cohesion': cohesion,
+                    'collisionDistance': collisionDistance,}
+    return scene_params, property_params

@@ -68,6 +68,10 @@ def extract_physics(physics_path, obj):
         phys_param = np.array([
             properties['stiffness']
         ])
+    elif obj == 'bunnybath':
+        phys_param = np.array([
+            properties['viscosity']
+        ])
     else:
         raise ValueError('Invalid object type.')
     return phys_param
