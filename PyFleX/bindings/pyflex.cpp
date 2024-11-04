@@ -2554,6 +2554,9 @@ void pyflex_init(bool headless=false) {
     // Hetergeneous scenes 05/29/2024
     g_scenes.push_back(new by_RopeGranular("Rope Granular")); //39
 
+    // Multi objects scene
+    g_scenes.push_back(new by_MultiObjects("Multi Objects")); //40
+
     // init graphics
     RenderInitOptions options;
 

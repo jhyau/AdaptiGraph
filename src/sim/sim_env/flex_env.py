@@ -114,7 +114,7 @@ class FlexEnv(gym.Env):
         self.table_shape_states[0] = np.concatenate([center, center, quats, quats])
         
         # table for robot
-        if self.obj in ['cloth', 'softbody', 'bunnybath']: #'softbody'
+        if self.obj in ['cloth', 'softbody', 'bunnybath', 'multiobj']: #'softbody'
             robot_table_height = 0.5 + 1.0
         else:
             robot_table_height = 0.5 + 0.3
@@ -143,7 +143,7 @@ class FlexEnv(gym.Env):
             self.robotId = pyflex.loadURDF(self.flex_robot_helper, 'sim/assets/xarm/xarm6_with_gripper.urdf', 
                                            robot_base_pos, robot_base_orn, globalScaling=10.0) 
             self.rest_joints = np.zeros(8)
-        elif self.obj in ['cloth', 'softbody', 'bunnybath']: #'softbody'
+        elif self.obj in ['cloth', 'softbody', 'bunnybath', 'multiobj']: #'softbody'
             # gripper
             robot_base_pos = [-self.wkspace_width-0.6, 0., self.wkspace_height+1.0]
             robot_base_orn = [0, 0, 0, 1]
@@ -419,7 +419,7 @@ class FlexEnv(gym.Env):
         if self.obj in ['rope', 'granular']:
             action = self.sample_deform_actions()
             return action
-        elif self.obj in ['cloth', 'softbody', 'bunnybath']: #'softbody'
+        elif self.obj in ['cloth', 'softbody', 'bunnybath', 'multiobj']: #'softbody'
             action, boundary_points, boundary = self.sample_grasp_actions_corner(init, boundary_points, boundary)
             return action, boundary_points, boundary
         else:

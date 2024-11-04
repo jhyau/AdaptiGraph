@@ -114,6 +114,7 @@ public:
 #include "scenes/by_softbody.h" //37
 #include "scenes/by_roperigid.h" //38
 #include "scenes/by_ropegranular.h" //39
+#include "scenes/by_multi_objects.h" //40
 
 #include "scenes/adhesion.h"
 #include "scenes/armadilloshower.h" 

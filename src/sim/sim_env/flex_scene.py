@@ -33,6 +33,10 @@ class FlexScene:
             # bunnybath.h doesn't take the same params as input
             self.env_idx = 0
             self.scene_params, self.property_params = yz_bunnybath_scene()
+        elif self.obj == "multiobj":
+            # index for by_multi_objects.h is 40
+            self.env_idx = 40
+            self.scene_params, self.property_params = multi_obj_scene()
         else:
             raise ValueError("Unknown Scene.")
         
