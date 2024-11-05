@@ -1,6 +1,6 @@
 dataset_config:
   data_name: "multiobj"
-  output_name: "multiobj-data-gen-gripper-homo-connect-all-false-cloth"
+  output_name: "multiobj-data-gen-gripper-homo-connect-all-true-cloth"
   materials: ["multiobj"]
   data_dir: "../sim_data" # data directory
   prep_data_dir: "../preprocess" # preprocessed data directory
@@ -36,7 +36,7 @@ dataset_config:
       fps_radius_range: [0.24, 0.26]
       adj_radius_range: [0.74, 0.76]
       topk: 5
-      connect_tool_all: False
+      connect_tool_all: True
   
   randomness: 
     use: False

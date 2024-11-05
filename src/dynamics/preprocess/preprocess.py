@@ -75,6 +75,7 @@ def extract_physics(physics_path, obj):
     elif obj == 'multiobj':
         phys_param = np.array([
             properties['stiffness']
+            #properties['stiffness2']
         ])
     else:
         raise ValueError('Invalid object type.')

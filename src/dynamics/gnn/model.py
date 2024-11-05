@@ -220,6 +220,7 @@ class DynamicsPredictor(nn.Module):
         # Finished preparing p_inputs
 
         # Preparing rel_inputs
+        # TODO: add new node feature as relation input here (add a feature to indicate which object it belongs to)
         rel_inputs = torch.empty((B, n_rel, 0), dtype=torch.float32).to(self.device)
         if self.model_config['rel_particle_dim'] > 0:
             assert self.model_config['rel_particle_dim'] == p_inputs.size(2)

@@ -419,8 +419,12 @@ class FlexEnv(gym.Env):
         if self.obj in ['rope', 'granular']:
             action = self.sample_deform_actions()
             return action
-        elif self.obj in ['cloth', 'softbody', 'bunnybath', 'multiobj']: #'softbody'
+        elif self.obj in ['cloth', 'bunnybath']: #'softbody'
             action, boundary_points, boundary = self.sample_grasp_actions_corner(init, boundary_points, boundary)
+            return action, boundary_points, boundary
+        elif self.obj in ['multiobj', 'softbody']:
+            print("!!!!!!!!!!!!!!!!!grasping whole obj!!!!!!!!!!!!!!!")
+            action, boundary_points, boundary = self.sample_grasp_actions_whole_obj(init, boundary_points, boundary)
             return action, boundary_points, boundary
         else:
             raise ValueError('action not defined')
@@ -472,6 +476,85 @@ class FlexEnv(gym.Env):
             action = None
         
         return action
+    
+    def sample_grasp_actions_whole_obj(self, init=False, boundary_points=None, boundary=None):
+        # Grasp the width of the object
+        positions = self.get_positions().reshape(-1, 4)
+        positions[:, 2] *= -1
+        particle_x, particle_y, particle_z = positions[:, 0], positions[:, 1], positions[:, 2]
+        x_min, y_min, z_min = np.min(particle_x), np.min(particle_y), np.min(particle_z)
+        x_max, y_max, z_max = np.max(particle_x), np.max(particle_y), np.max(particle_z)
+
+        # choose the starting point at the boundary of the object
+        if init: # record boundary points
+            boundary_points = []
+            boundary = []
+            for idx, point in enumerate(positions):
+                if point[0] == x_max:
+                    boundary_points.append(idx)
+                    boundary.append(1)
+                elif point[0] == x_min:
+                    boundary_points.append(idx)
+                    boundary.append(2)
+                elif point[2] == z_max:
+                    boundary_points.append(idx)
+                    boundary.append(3)
+                elif point[2] == z_min:
+                    boundary_points.append(idx)
+                    boundary.append(4)
+        assert len(boundary_points) == len(boundary)
+
+        # random pick a point as start point along x-axis or z-axis
+        valid = False
+        for _ in range(1000):
+            pick_idx = np.random.choice(len(boundary_points))
+            if boundary[pick_idx] == 1 or boundary[pick_idx] == 2:
+                axis = "x"
+                # set z position to be z_min
+                startpoint_pos = np.array([positions[boundary_points[pick_idx], 0], z_min])
+            else:
+                axis = "z"
+                # set x position to be x_min
+                startpoint_pos = np.array([x_min, positions[boundary_points[pick_idx], 2]])
+            # start point is at boundary of one axis and min of the other axis
+            #startpoint_pos = positions[boundary_points[pick_idx], [0, 2]]
+            endpoint_pos = startpoint_pos.copy()
+            # choose end points which is outside the obj
+            #move_distance = rand_float(1.0, 1.5)
+            if axis == "x":
+                # move distance is along the width of z-axis
+                move_distance = z_max - z_min
+            else:
+                # move distance is along the width of x-axis
+                move_distance = x_max - x_min
+            
+            if boundary[pick_idx] == 1:
+                #endpoint_pos[0] += move_distance 
+                # start point is on x_max
+                endpoint_pos[1] = z_max
+            elif boundary[pick_idx] == 2:
+                # start point is on x_min
+                #endpoint_pos[0] -= move_distance
+                endpoint_pos[1] = z_max
+            elif boundary[pick_idx] == 3:
+                # start point at z_max
+                #endpoint_pos[1] += move_distance
+                endpoint_pos[0] = x_max
+            elif boundary[pick_idx] == 4:
+                # start point at z_min
+                #endpoint_pos[1] -= move_distance
+                endpoint_pos[0] = x_max
+            
+            if np.abs(endpoint_pos[0]) < 3.5 and np.abs(endpoint_pos[1]) < 2.5:
+                valid = True
+                break
+        
+        if valid:
+            action = np.concatenate([startpoint_pos.reshape(-1), endpoint_pos.reshape(-1)], axis=0)
+        else:
+            action = None
+        
+        return action, boundary_points, boundary
     
     def sample_grasp_actions_corner(self, init=False, boundary_points=None, boundary=None):
         positions = self.get_positions().reshape(-1, 4)

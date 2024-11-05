@@ -160,11 +160,33 @@ class by_MultiObjects: public Scene
 
             float collisionDistance = ptr[27];
 
-            char box_path[100];
+            char cube_path[100];
 
-            Instance box(make_path(box_path, "/data/rigid/cube_mesh.ply"));
-            box.mScale = scale;
-            box.mTranslation = trans;
+            Instance cube(make_path(cube_path, "/data/rigid/cube_mesh.ply"));
+            cube.mScale = scale;
+            cube.mTranslation = trans;
+            cube.mRotation = rotate;
+            cube.mClusterSpacing = clusterSpacing;
+            cube.mClusterRadius = clusterRadius;
+            cube.mClusterStiffness = clusterStiffness;
+            cube.mLinkRadius = linkRadius;
+            cube.mLinkStiffness = linkStiffness;
+            cube.mGlobalStiffness = globalStiffness;
+            cube.mSurfaceSampling = surfaceSampling;
+            cube.mVolumeSampling = volumeSampling;
+            cube.mSkinningFalloff = skinningFalloff;
+            cube.mSkinningMaxDistance = skinningMaxDistance;
+            cube.mClusterPlasticThreshold = clusterPlasticThreshold;
+            cube.mClusterPlasticCreep = clusterPlasticCreep;
+            AddInstance(cube);
+
+            // Create an actual box object
+            char box_path[100];
+            Vec3 box_scale = Vec3(ptr[0], ptr[1], ptr[2]);
+            Vec3 box_trans = Vec3(ptr[3]-2.0, ptr[4], ptr[5]-2.0);
+            Instance box(make_path(box_path, "/data/box.ply"));
+            box.mScale = box_scale;
+            box.mTranslation = box_trans;
             box.mRotation = rotate;
             box.mClusterSpacing = clusterSpacing;
             box.mClusterRadius = clusterRadius;

@@ -155,6 +155,7 @@ class DynDataset(Dataset):
         obj_mask[:obj_kp_num] = True
         
         ## construct attrs
+        # TODO: change to include more than one object, start with 2 or 3 objects like obj1 + obj2 + eef
         # attr_dim: (N_obj + N_eef, 2)
         attr_dim = 2 # object + eef
         attrs = np.zeros((self.state_dim, attr_dim), dtype=np.float32)
@@ -162,6 +163,7 @@ class DynDataset(Dataset):
         attrs[self.max_nobj : self.max_nobj + eef_kp_num, 1] = 1.
         
         ## construct instance information
+        # TODO: update instance info here too
         instance_num = 1
         p_rigid = np.zeros(instance_num, dtype=np.float32)
         p_instance = np.zeros((self.max_nobj, instance_num), dtype=np.float32)

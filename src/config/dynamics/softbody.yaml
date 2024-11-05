@@ -1,6 +1,6 @@
 dataset_config:
   data_name: "softbody"
-  output_name: "softbody-data-gen-gripper-homo-connect-all-true-cloth"
+  output_name: "smaller-softbody-data-gen-grasp-whole-obj-homo-connect-all-false-cloth"
   materials: ["softbody"]
   data_dir: "../sim_data" # data directory
   prep_data_dir: "../preprocess" # preprocessed data directory
@@ -36,7 +36,7 @@ dataset_config:
       fps_radius_range: [0.24, 0.26]
       adj_radius_range: [0.74, 0.76]
       topk: 5
-      connect_tool_all: True
+      connect_tool_all: False
   
   randomness: 
     use: False
