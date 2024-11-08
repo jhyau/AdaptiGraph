@@ -199,9 +199,9 @@ class DynamicsPredictor(nn.Module):
             #print(f"physics_param_og: {physics_param}")
         else:
             # if physics_param is already a matrix
-            print("physics param is a matrix of size: ", kwargs[physics_keys[0]].size())
+            print(f"batch size {B} for physics param is a matrix of size: ", kwargs[physics_keys[0]].size())
             #physics_param = kwargs[physics_keys[0]].reshape(1, kwargs[physics_keys[0]].shape[-1], 1)
-            physics_param = kwargs[physics_keys[0]].reshape(B, n_p, phys_dim) # should be same size as physics_param_og
+            physics_param = kwargs[physics_keys[0]].reshape(B, n_p, 1) # should be same size as physics_param_og
             print(f"physics_param size after: ", physics_param.size())
         physics_param_s = torch.zeros(B, n_s, physics_param.shape[2]).to(self.device)
         physics_param = torch.cat([physics_param, physics_param_s], 1)
