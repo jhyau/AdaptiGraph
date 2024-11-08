@@ -185,12 +185,24 @@ class DynamicsPredictor(nn.Module):
         print(f"kwargs keys: {kwargs.keys()}")
         physics_keys = [k for k in kwargs.keys() if k.endswith('_physics_param')]
         assert len(physics_keys) == 1
-        physics_param_og = kwargs[physics_keys[0]]  # (B, phys_dim[i])
-        physics_param_og = physics_param_og[:, None, :].repeat(1, n_p, 1)  # (B, N, phys_dim)
-        #print(f"original physics_param size: ", physics_param_og.size())
-        # if physics_param is already a matrix
-        #physics_param = kwargs[physics_keys[0]].reshape(1, kwargs[physics_keys[0]].shape[-1], 1)
-        physics_param = kwargs[physics_keys[0]].reshape(1, n_p, 1)
+
+        # if physics param is only one value, then use original repeat method
+        phys_dim = kwargs[physics_keys[0]].size(dim=-1)
+        if kwargs[physics_keys[0]].size(dim=-1) == 1:
+            print("physics param is only one value")
+            physics_param = kwargs[physics_keys[0]]  # (B, phys_dim[i])
+            #print(f"original physics_param size before: ", physics_param.size())
+            #print(physics_param[:, None, :].size())
+            # adds a dimension in the middle, repeats the phys param for this new dim=1
+            physics_param = physics_param[:, None, :].repeat(1, n_p, 1)  # (B, N, phys_dim)
+            print(f"original physics_param size after: ", physics_param.size())
+            #print(f"physics_param_og: {physics_param}")
+        else:
+            # if physics_param is already a matrix
+            print("physics param is a matrix of size: ", kwargs[physics_keys[0]].size())
+            #physics_param = kwargs[physics_keys[0]].reshape(1, kwargs[physics_keys[0]].shape[-1], 1)
+            physics_param = kwargs[physics_keys[0]].reshape(B, n_p, phys_dim) # should be same size as physics_param_og
+            print(f"physics_param size after: ", physics_param.size())
         physics_param_s = torch.zeros(B, n_s, physics_param.shape[2]).to(self.device)
         physics_param = torch.cat([physics_param, physics_param_s], 1)
         #print(f"physics_param matrix size in gnn: {physics_param.size()}")

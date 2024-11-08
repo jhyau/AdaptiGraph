@@ -311,7 +311,8 @@ class FlexEnv(gym.Env):
                 pyflex.step()
                 
                 ## ================================================================
-                ## gripper control
+                ## gripper control 
+                # TODO: see if it's possible to modify the grasping action to hold whole object
                 if self.gripper and i_p >= 1:
                     grasp_thresd = 0.1 
                     obj_pos = self.get_positions().reshape(-1, 4)[:, :3]
@@ -423,8 +424,9 @@ class FlexEnv(gym.Env):
             action, boundary_points, boundary = self.sample_grasp_actions_corner(init, boundary_points, boundary)
             return action, boundary_points, boundary
         elif self.obj in ['multiobj', 'softbody']:
-            print("!!!!!!!!!!!!!!!!!grasping whole obj!!!!!!!!!!!!!!!")
-            action, boundary_points, boundary = self.sample_grasp_actions_whole_obj(init, boundary_points, boundary)
+            #print("!!!!!!!!!!!!!!!!!grasping whole obj!!!!!!!!!!!!!!!")
+            #action, boundary_points, boundary = self.sample_grasp_actions_whole_obj(init, boundary_points, boundary)
+            action, boundary_points, boundary = self.sample_grasp_actions_corner(init, boundary_points, boundary)
             return action, boundary_points, boundary
         else:
             raise ValueError('action not defined')
@@ -478,7 +480,7 @@ class FlexEnv(gym.Env):
         return action
     
     def sample_grasp_actions_whole_obj(self, init=False, boundary_points=None, boundary=None):
-        # Grasp the width of the object
+        # TODO: Grasp the width of the object
         positions = self.get_positions().reshape(-1, 4)
         positions[:, 2] *= -1
         particle_x, particle_y, particle_z = positions[:, 0], positions[:, 1], positions[:, 2]

@@ -389,7 +389,23 @@ def multi_obj_scene():
 
     relaxtion_factor = 1.
     collisionDistance = radius * 0.5
-    
+
+    # box scale and trans
+    # softbody trans position
+    box_trans = [1.0, 0.5, 5.0] # [x, y, z]
+    box_edge_length = rand_float(2.5, 3.0)
+    print(f"edge_length: {edge_length}")
+    #rope_thickness = 3.0
+    box_scale = np.array([edge_length, edge_length, edge_length]) * 30
+
+    # flat circle scale and trans
+    # softbody trans position
+    flat_trans = [-2.0, 0.5, -1.0] # [x, y, z]
+
+    # softbody scale
+    #rope_thickness = 3.0
+    flat_scale = np.array([rand_float(2.5, 3.0), rand_float(2.5, 3.0), rand_float(2.5, 3.0)]) * 10 #* 50
+
     # params
     scene_params = np.array([*scale, *trans, radius, 
                             cluster_spacing, cluster_radius, cluster_stiffness,
@@ -397,7 +413,7 @@ def multi_obj_scene():
                             surface_sampling, volume_sampling, skinning_falloff, skinning_max_dist,
                             cluster_plastic_threshold, cluster_plastic_creep,
                             dynamicFriction, particleFriction, draw_mesh, relaxtion_factor, 
-                            *rotate, collisionDistance])
+                            *rotate, collisionDistance, *box_scale, *box_trans, *flat_scale, *flat_trans])
     
     property_params = {'particle_radius': radius,
                     'cluster_radius': cluster_radius,

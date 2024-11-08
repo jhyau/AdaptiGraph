@@ -70,7 +70,7 @@ def gen_data(info):
         for k in range(10):
             u = None
             
-            if obj in ['cloth', 'softbody', 'bunnybath', 'multiobj']: #'softbody'
+            if obj in ['cloth', 'softbody', 'bunnybath', 'multiobj']:
                 # Use the grasping gripper
                 print("grasping action")
                 if idx_timestep == 0:

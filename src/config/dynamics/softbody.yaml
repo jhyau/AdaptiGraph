@@ -1,6 +1,6 @@
 dataset_config:
   data_name: "softbody"
-  output_name: "smaller-softbody-data-gen-grasp-whole-obj-homo-connect-all-false-cloth"
+  output_name: "smaller-softbody-data-gen-grasp-corner-homo-connect-all-false-cloth"
   materials: ["softbody"]
   data_dir: "../sim_data" # data directory
   prep_data_dir: "../preprocess" # preprocessed data directory

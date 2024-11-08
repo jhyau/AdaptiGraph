@@ -182,8 +182,8 @@ class by_MultiObjects: public Scene
 
             // Create an actual box object
             char box_path[100];
-            Vec3 box_scale = Vec3(ptr[0], ptr[1], ptr[2]);
-            Vec3 box_trans = Vec3(ptr[3]-2.0, ptr[4], ptr[5]-2.0);
+            Vec3 box_scale = Vec3(ptr[28], ptr[29], ptr[30]);
+            Vec3 box_trans = Vec3(ptr[31], ptr[32], ptr[33]);
             Instance box(make_path(box_path, "/data/box.ply"));
             box.mScale = box_scale;
             box.mTranslation = box_trans;
@@ -203,8 +203,8 @@ class by_MultiObjects: public Scene
             AddInstance(box);
             
             // Create another object instance, shift it away from box
-            Vec3 obj_scale = Vec3(ptr[0], ptr[1], ptr[2]);
-            Vec3 obj_trans = Vec3(ptr[3]+1.0, ptr[4], ptr[5]+1.0);
+            Vec3 obj_scale = Vec3(ptr[34], ptr[35], ptr[36]);
+            Vec3 obj_trans = Vec3(ptr[37], ptr[38], ptr[39]);
             char obj_path[100];
             Instance obj(make_path(obj_path, "/data/1a0c94a2e3e67e4a2e4877b52b3fca7.obj"));
             obj.mScale = obj_scale;

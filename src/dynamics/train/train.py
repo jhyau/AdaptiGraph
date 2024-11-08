@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 
 import torch
 from torch.utils.data import DataLoader
+from tqdm import tqdm
 
 import sys
 sys.path.append('.')
@@ -64,8 +65,9 @@ def train(config):
     
     ## training
     loss_plot_list_train = []
-    loss_plot_list_valid = [] 
-    for epoch in range(train_config['n_epochs']):
+    loss_plot_list_valid = []
+    start_time = time.time() 
+    for epoch in tqdm(range(train_config['n_epochs'])):
         time1 = time.time()
         for phase in phases:
             with grad_manager(phase):
@@ -146,6 +148,7 @@ def train(config):
 
         time2 = time.time()
         print(f'Epoch {epoch} time: {time2 - time1}\n')
+    print(f"**********Finished training! Total time: {time.time() - start_time}")
 
 
 if __name__ == "__main__":

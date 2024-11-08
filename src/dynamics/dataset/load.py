@@ -60,12 +60,14 @@ def load_dataset(dataset_config, material_config, phase='train'):
                     range_min = item['min']
                     range_max = item['max']
                     used_params.append((properties[item['name']] - range_min) / (range_max - range_min + 1e-6))
+                    print(f"using param: {item['name']}, orig value: {properties[item['name']]}, normalized value: {used_params[-1]}")
             
             used_params = np.array(used_params).astype(np.float32)
             used_params = used_params * (phys_norm_max - phys_norm_min) + phys_norm_min
             physics_params_episode[material_name] = used_params
         
         physics_params.append(physics_params_episode)
+        print("loaded physics params: ", physics_params)
     
     return pair_lists, physics_params
 
