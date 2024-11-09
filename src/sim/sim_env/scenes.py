@@ -392,19 +392,20 @@ def multi_obj_scene():
 
     # box scale and trans
     # softbody trans position
-    box_trans = [1.0, 0.5, 5.0] # [x, y, z]
+    box_trans = [1.0, 0.5, 0.0] # [x, y, z]
     box_edge_length = rand_float(2.5, 3.0)
-    print(f"edge_length: {edge_length}")
+    print(f"box edge_length: {box_edge_length}")
     #rope_thickness = 3.0
-    box_scale = np.array([edge_length, edge_length, edge_length]) * 20
+    box_scale = np.array([box_edge_length, box_edge_length, box_edge_length]) * 20
 
     # flat circle scale and trans
     # softbody trans position
-    flat_trans = [-2.0, 0.5, -1.0] # [x, y, z]
+    flat_trans = [0, 0.5, -1.0] # [x, y, z]
 
     # softbody scale
     #rope_thickness = 3.0
-    flat_scale = np.array([rand_float(2.5, 3.0), rand_float(2.5, 3.0), rand_float(2.5, 3.0)]) * 10 #* 50
+    axis = rand_float(2.5, 3.0)
+    flat_scale = np.array([axis, axis, axis]) * 10 #* 50
 
     # params
     scene_params = np.array([*scale, *trans, radius, 

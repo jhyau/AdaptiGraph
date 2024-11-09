@@ -206,7 +206,9 @@ class by_MultiObjects: public Scene
             Vec3 obj_scale = Vec3(ptr[34], ptr[35], ptr[36]);
             Vec3 obj_trans = Vec3(ptr[37], ptr[38], ptr[39]);
             char obj_path[100];
-            Instance obj(make_path(obj_path, "/data/1a0c94a2e3e67e4a2e4877b52b3fca7.obj"));
+            //Instance obj(make_path(obj_path, "/data/1a0c94a2e3e67e4a2e4877b52b3fca7.obj"));
+            // Box/rectangle/cylindrical objects only for now
+            Instance obj(make_path(obj_path, "/data/sphere.ply"));
             obj.mScale = obj_scale;
             obj.mTranslation = obj_trans;
             obj.mRotation = rotate;
