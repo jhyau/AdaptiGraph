@@ -1,6 +1,7 @@
 dataset_config:
   data_name: "multiobj"
   output_name: "sphere-3multiobj-far-apart-homo-connect-all-false-softbody"
+  data_folder: "part_2_obj_multiobj"
   materials: ["multiobj"]
   data_dir: "../sim_data" # data directory
   prep_data_dir: "../preprocess" # preprocessed data directory

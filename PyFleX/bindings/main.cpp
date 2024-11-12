@@ -200,6 +200,9 @@ struct SimBuffers {
     NvFlexVector<Vec3> triangleNormals;
     NvFlexVector<Vec3> uvs;
 
+    // Map from particle index to object instance index
+    NvFlexVector<int> particle2objInstance;
+
     SimBuffers(NvFlexLibrary* l) :
         positions(l), restPositions(l), velocities(l), phases(l), densities(l),
         anisotropy1(l), anisotropy2(l), anisotropy3(l), normals(l), smoothPositions(l),
@@ -210,7 +213,7 @@ struct SimBuffers {
         rigidLocalPositions(l), rigidLocalNormals(l), inflatableTriOffsets(l),
         inflatableTriCounts(l), inflatableVolumes(l), inflatableCoefficients(l),
         inflatablePressures(l), springIndices(l), springLengths(l),
-        springStiffness(l), triangles(l), triangleNormals(l), uvs(l)
+        springStiffness(l), triangles(l), triangleNormals(l), uvs(l), particle2objInstance(l)
     {}
 };
 
@@ -265,6 +268,9 @@ void MapBuffers(SimBuffers* buffers) {
     buffers->triangles.map();
     buffers->triangleNormals.map();
     buffers->uvs.map();
+
+    // Map from particle index to object instance index
+    buffers->particle2objInstance.map();
 }
 
 void UnmapBuffers(SimBuffers* buffers) {
@@ -320,6 +326,9 @@ void UnmapBuffers(SimBuffers* buffers) {
     buffers->triangles.unmap();
     buffers->triangleNormals.unmap();
     buffers->uvs.unmap();
+
+    // Map from particle index to object instance index
+    buffers->particle2objInstance.unmap();
 
 }
 
@@ -380,6 +389,9 @@ void DestroyBuffers(SimBuffers* buffers) {
     buffers->triangles.destroy();
     buffers->triangleNormals.destroy();
     buffers->uvs.destroy();
+
+    // Map from particle index to object instance index
+    buffers->particle2objInstance.destroy();
 
     delete buffers;
 }
@@ -584,6 +596,8 @@ void Init(int scene, bool centerCamera = true) {
     g_buffers->triangles.resize(0);
     g_buffers->triangleNormals.resize(0);
     g_buffers->uvs.resize(0);
+
+    g_buffers->particle2objInstance.resize(0);
 
     g_meshSkinIndices.resize(0);
     g_meshSkinWeights.resize(0);
@@ -852,6 +866,8 @@ void Init(int scene, bool centerCamera = true) {
     g_buffers->anisotropy1.resize(maxParticles);
     g_buffers->anisotropy2.resize(maxParticles);
     g_buffers->anisotropy3.resize(maxParticles);
+
+    g_buffers->particle2objInstance.resize(maxParticles);
 
     // save rest positions
     g_buffers->restPositions.resize(g_buffers->positions.size());

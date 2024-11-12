@@ -66,6 +66,7 @@ class FlexEnv(gym.Env):
         self.imgs_list = []
         self.particle_pos_list = []
         self.eef_states_list = []
+        self.particle_2_obj_inst_list = []
         
         self.fps = self.dataset_config['fps']
         self.fps_number = self.dataset_config['fps_number']
@@ -128,6 +129,19 @@ class FlexEnv(gym.Env):
         pyflex.add_box(halfEdge, center, quats, hideShape, color)
         self.table_shape_states[1] = np.concatenate([center, center, quats, quats])
     
+    def add_empty_box(self):
+        ## Add an empty box on the table for packing scene
+        self.box_height = 0.25
+        self.box_width = 1.0 # 1.0*2=2 grid = 200mm
+        self.box_length = 2.0 # 2.0*2=4 grid = 400mm
+        halfEdge = np.array([self.box_width, self.box_height, self.box_length])
+        center = np.array([0.0, 0.0, (self.wkspace_length-self.box_length)/2.0])
+        quats = quatFromAxisAngle(axis=np.array([0., 1., 0.]), angle=0.)
+        hideShape = 0
+        color = np.ones(3) * (50. / 255.)
+        pyflex.add_box(halfEdge, center, quats, hideShape, color)
+        self.empty_box_shape_states = np.concatenate([center, center, quats, quats])
+    
     def add_robot(self):
         if self.obj in ['granular']:
             # flat board pusher
@@ -164,17 +178,35 @@ class FlexEnv(gym.Env):
             # save images
             img = self.render()
             img_list.append(img)
+
+            # Num shapes and rigids
+            # print(f"number of shapes: {pyflex.get_n_shapes()}")
+            # print(f"number of rigids: {pyflex.get_n_rigids()}")
+            # print(f"get mesh edges shape: {pyflex.get_edges().shape}")
+            # if pyflex.get_edges().shape[0] > 0:
+            #     print(pyflex.get_edges()[0])
+            # print(f"get mesh faces shape: {pyflex.get_faces().shape}")
+            # if pyflex.get_faces().shape[0] > 0:
+            #     print(pyflex.get_faces()[0])
             
             # save particles
             if not saved_particles:
                 # save particle pos
                 particles = self.get_positions().reshape(-1, 4)
                 particles_pos = particles[:, :3]
+                # Mapping of particle to object instance
+                part_2_obj = self.get_part_2_instance()
+                print(f"particle positions shape: {particles.shape}")
+                print(f"part2obj shape: {part_2_obj.shape}")
+                print(f"unique values in the part2obj array: {np.unique(part_2_obj)}")
+                print(part_2_obj)
                 if self.fps:
                     if init_fps:
                         _, self.sampled_idx = fps_with_idx(particles_pos, self.fps_number)
                     particles_pos = particles_pos[self.sampled_idx]
+                    part_2_obj = part_2_obj[self.sampled_idx]
                 self.particle_pos_list.append(particles_pos)
+                self.particle_2_obj_inst_list.append(part_2_obj)
                 # save eef pos
                 robot_shape_states = pyflex.getRobotShapeStates(self.flex_robot_helper)
                 if self.gripper:
@@ -224,6 +256,9 @@ class FlexEnv(gym.Env):
                 = self.camera.init_multiview_cameras()
         # add table
         self.add_table()
+        # add empty box for packing
+        # TODO: make the box hollow
+        #self.add_empty_box()
         ## add robot
         self.add_robot()
         pyflex.set_shape_states(self.robot_to_shape_states(pyflex.getRobotShapeStates(self.flex_robot_helper)))
@@ -255,7 +290,7 @@ class FlexEnv(gym.Env):
             self.store_data(store_cam_param=True, init_fps=True)
         
         # output
-        out_data = self.imgs_list, self.particle_pos_list, self.eef_states_list
+        out_data = self.imgs_list, self.particle_pos_list, self.eef_states_list, self.particle_2_obj_inst_list
         
         return out_data
         
@@ -264,7 +299,7 @@ class FlexEnv(gym.Env):
         action: [start_x, start_z, end_x, end_z]
         """
         self.count = 0
-        self.imgs_list, self.particle_pos_list, self.eef_states_list = data
+        self.imgs_list, self.particle_pos_list, self.eef_states_list, self.particle_2_obj_inst_list = data
         
         # set up action
         h = 0.5 + self.stick_len
@@ -402,7 +437,7 @@ class FlexEnv(gym.Env):
             self.store_data()
         
         obs = self.render()
-        out_data = self.imgs_list, self.particle_pos_list, self.eef_states_list
+        out_data = self.imgs_list, self.particle_pos_list, self.eef_states_list, self.particle_2_obj_inst_list
         
         return obs, out_data
     
@@ -616,7 +651,12 @@ class FlexEnv(gym.Env):
     def get_positions(self):
         return pyflex.get_positions()
     
+    def get_part_2_instance(self):
+        return pyflex.get_particle_2_obj_instance()
+    
     def get_num_particles(self):
+        n_particles = int(pyflex.get_n_particles)
+        assert n_particles == self.get_positions().reshape(-1, 4).shape[0]
         return self.get_positions().reshape(-1, 4).shape[0]
     
     def get_property_params(self):

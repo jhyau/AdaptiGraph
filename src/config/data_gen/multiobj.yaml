@@ -1,12 +1,13 @@
 dataset:
   folder: "../sim_data" # folder to save data
   obj: "multiobj"
+  save_dir: "part_2_obj_multiobj"
 
   # data collection
   base: 0
-  n_episode: 5
+  n_episode: 1
   n_timestep: 5
-  n_worker: 5
+  n_worker: 1
   
   # sim env
   headless: True # False: OpenGL visualization

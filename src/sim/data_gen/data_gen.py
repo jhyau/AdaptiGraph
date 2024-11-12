@@ -21,7 +21,11 @@ def gen_data(info):
     
     if save_data:
         # create folder
-        obj_dir = os.path.join(data_dir, obj)
+        if save_dir:
+            obj_dir = os.path.join(data_dir, save_dir)
+            print(f"saving in save_dir: {obj_dir}")
+        else:
+            obj_dir = os.path.join(data_dir, obj)
         epi_dir = os.path.join(obj_dir, f'{idx_episode:06}')
         os.makedirs(epi_dir, exist_ok=True)
 
@@ -150,6 +154,10 @@ if __name__ == "__main__":
     os.system("mkdir -p %s" % data_dir)
     
     obj = dataset_config['obj']
+    if "save_dir" in dataset_config.keys():
+        save_dir = dataset_config['save_dir']
+    else:
+        save_dir = None
     
     base_0 = dataset_config['base']
     n_worker = dataset_config['n_worker']

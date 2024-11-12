@@ -20,8 +20,12 @@ def load_pairs(pairs_path, episode_range):
 def load_dataset(dataset_config, material_config, phase='train'):
     # config
     data_name = dataset_config['data_name']
-    data_dir = os.path.join(dataset_config['data_dir'], data_name)#+"_set_action_first_try_100_epochs")
-    prep_dir = os.path.join(dataset_config['prep_data_dir'], data_name)#+"_set_action_first_try_100_epochs")
+    if "data_folder" in dataset_config.keys():
+        data_folder = dataset_config['data_folder']
+    else:
+        data_folder = data_name
+    data_dir = os.path.join(dataset_config['data_dir'], data_folder)#+"_set_action_first_try_100_epochs")
+    prep_dir = os.path.join(dataset_config['prep_data_dir'], data_folder)#+"_set_action_first_try_100_epochs")
     ratio = dataset_config['ratio']
 
     print("data dir for loading dataset: ", data_dir)
@@ -74,7 +78,11 @@ def load_dataset(dataset_config, material_config, phase='train'):
 def load_positions(dataset_config):
     ## config
     data_name = dataset_config['data_name']
-    prep_dir = os.path.join(dataset_config['prep_data_dir'], data_name)#+"_set_action_first_try_100_epochs")
+    if "data_folder" in dataset_config.keys():
+        data_folder = dataset_config['data_folder']
+    else:
+        data_folder = data_name
+    prep_dir = os.path.join(dataset_config['prep_data_dir'], data_folder)#+"_set_action_first_try_100_epochs")
     print(f"load_positions in load.py, prep_dir: {prep_dir}")
 
     ## load positions

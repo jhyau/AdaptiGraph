@@ -212,6 +212,9 @@ struct SimBuffers {
     NvFlexVector<Vec3> triangleNormals;
     NvFlexVector<Vec3> uvs;
 
+    // Map from particle index to object instance index
+    NvFlexVector<int> particle2objInstance;
+
     SimBuffers(NvFlexLibrary* l) :
         positions(l), restPositions(l), velocities(l), phases(l), densities(l),
         anisotropy1(l), anisotropy2(l), anisotropy3(l), normals(l), smoothPositions(l),
@@ -222,7 +225,7 @@ struct SimBuffers {
         rigidLocalPositions(l), rigidLocalNormals(l), inflatableTriOffsets(l),
         inflatableTriCounts(l), inflatableVolumes(l), inflatableCoefficients(l),
         inflatablePressures(l), springIndices(l), springLengths(l),
-        springStiffness(l), triangles(l), triangleNormals(l), uvs(l)
+        springStiffness(l), triangles(l), triangleNormals(l), uvs(l), particle2objInstance(l)
     {}
 };
 
@@ -279,6 +282,9 @@ void MapBuffers(SimBuffers* buffers) {
     buffers->triangles.map();
     buffers->triangleNormals.map();
     buffers->uvs.map();
+
+    // Map from particle index to object instance index
+    buffers->particle2objInstance.map();
 }
 
 void UnmapBuffers(SimBuffers* buffers) {
@@ -336,6 +342,9 @@ void UnmapBuffers(SimBuffers* buffers) {
     buffers->triangles.unmap();
     buffers->triangleNormals.unmap();
     buffers->uvs.unmap();
+
+    // Map from particle index to object instance index
+    buffers->particle2objInstance.unmap();
 
 }
 
@@ -398,6 +407,9 @@ void DestroyBuffers(SimBuffers* buffers) {
     buffers->triangles.destroy();
     buffers->triangleNormals.destroy();
     buffers->uvs.destroy();
+
+    // Map from particle index to object instance index
+    buffers->particle2objInstance.destroy();
 
     delete buffers;
 }
@@ -612,6 +624,8 @@ void Init(int scene, py::array_t<float> scene_params,
     g_buffers->triangles.resize(0);
     g_buffers->triangleNormals.resize(0);
     g_buffers->uvs.resize(0);
+    
+    g_buffers->particle2objInstance.resize(0);
 
     g_meshSkinIndices.resize(0);
     g_meshSkinWeights.resize(0);
@@ -887,6 +901,8 @@ void Init(int scene, py::array_t<float> scene_params,
     g_buffers->anisotropy1.resize(maxParticles);
     g_buffers->anisotropy2.resize(maxParticles);
     g_buffers->anisotropy3.resize(maxParticles);
+
+    g_buffers->particle2objInstance.resize(maxParticles);
 
     // save rest positions
     g_buffers->restPositions.resize(g_buffers->positions.size());
@@ -2904,6 +2920,21 @@ py::array_t<float> pyflex_get_positions() {
     return positions;
 }
 
+py::array_t<int> pyflex_get_particle_2_obj_instance() {
+    g_buffers->particle2objInstance.map();
+    auto indices = py::array_t<int>((size_t)g_buffers->particle2objInstance.size());
+    auto ptr = (int *)indices.request().ptr;
+
+    for (size_t i = 0; i < (size_t)g_buffers->particle2objInstance.size(); i++)
+    {
+        ptr[i] = g_buffers->particle2objInstance[i];
+    }
+
+    g_buffers->particle2objInstance.unmap();
+
+    return indices;
+}
+
 py::array_t<int> pyflex_get_edges()
 {
     g_buffers->springIndices.map();
@@ -3758,6 +3789,8 @@ PYBIND11_MODULE(pyflex, m) {
 
     m.def("get_edges", &pyflex_get_edges, "Get mesh edges");
     m.def("get_faces", &pyflex_get_faces, "Get mesh faces");
+
+    m.def("get_particle_2_obj_instance", &pyflex_get_particle_2_obj_instance, "Get object instance index for corresponding particle");
 
     m.def("get_restPositions", &pyflex_get_restPositions, "Get particle restPositions");
     m.def("get_rigidOffsets", &pyflex_get_rigidOffsets, "Get rigid offsets");

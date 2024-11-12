@@ -144,7 +144,7 @@ def visualize_graph(imgs, cam_info,
                 #(col*color_step, 0, 0), -1)
                 col , -1)
         else:
-            print(f"homogeneous color for all obj particles")
+            # print(f"homogeneous color for all obj particles")
             cv2.circle(img, (int(obj_kp_proj[k, 0]), int(obj_kp_proj[k, 1])), point_size,    
                 (int(colormap[k, 2]), int(colormap[k, 1]), int(colormap[k, 0])), -1)
 

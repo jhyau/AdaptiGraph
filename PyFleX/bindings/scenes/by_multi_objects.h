@@ -255,7 +255,8 @@ class by_MultiObjects: public Scene
 
             // build soft bodies 
             for (int i = 0; i < int(mInstances.size()); i++) {
-                CreateSoftBody(mInstances[i], mRenderingInstances.size());
+                std::cout << "adding instance " << i << ", mRenderingInstances size: " << mRenderingInstances.size() << std::endl;
+                CreateSoftBody(i, mInstances[i], mRenderingInstances.size());
             }
 
             if (mPlinth) 
@@ -272,7 +273,7 @@ class by_MultiObjects: public Scene
             g_lightDistance *= 1.5f;
         }
 
-        void CreateSoftBody(Instance instance, int group = 0, bool texture=false)
+        void CreateSoftBody(int instanceIndex, Instance instance, int group = 0, bool texture=false)
         {
             RenderingInstance renderingInstance;
 
@@ -340,11 +341,18 @@ class by_MultiObjects: public Scene
             const int indexOffset = g_buffers->rigidOffsets.back();
 
             // add particle data to solver
+            std::cout << "particleOffset (positions size before for loop): " << particleOffset << std::endl;
+            // std::cout << "positions sizeof: " << sizeof(g_buffers->positions) << std::endl;
+            std::cout << "part2objInstance size: " << g_buffers->particle2objInstance.size() << std::endl;
+            // std::cout << "part2objInstance sizeof: " << sizeof(g_buffers->particle2objInstance) << std::endl;
             std::cout << "asset->numShapes:" << asset->numShapes << std::endl;
             for (int i = 0; i < asset->numParticles; ++i)
             {
                 g_buffers->positions.push_back(&asset->particles[i * 4]);
                 g_buffers->velocities.push_back(0.0f);
+                // Add the particle's corresponding instance index
+                // std::cout << "right before adding instance index to part2obj for instance " << instanceIndex << ", at particle num: " << i << std::endl;
+                g_buffers->particle2objInstance.push_back(instanceIndex);
 
                 const int phase = NvFlexMakePhase(group, eNvFlexPhaseSelfCollide | eNvFlexPhaseSelfCollideFilter);
                 g_buffers->phases.push_back(phase);
