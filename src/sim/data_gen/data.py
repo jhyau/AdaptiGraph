@@ -9,13 +9,16 @@ def store_data(filename, data, action):
     eef_states_list: (T, 14)
     """
     # load data
-    imgs_list, particle_pos_list, eef_states_list = data
-    imgs_list_np, particle_pos_list_np, eef_states_list_np = \
-        np.array(imgs_list), np.array(particle_pos_list), np.array(eef_states_list)
+    imgs_list, particle_pos_list, eef_states_list, part_2_obj_inst_list = data
+    imgs_list_np, particle_pos_list_np, eef_states_list_np, part_2_obj_inst_list_np = \
+        np.array(imgs_list), np.array(particle_pos_list), np.array(eef_states_list), np.array(part_2_obj_inst_list)
     
     # stat
     T, n_cam = imgs_list_np.shape[:2]
     n_particles = particle_pos_list_np.shape[1]
+
+    print(f"shape of particle positions: {part_2_obj_inst_list_np.shape}")
+    print(f"shape of part2obj instances map: {part_2_obj_inst_list_np.shape}")
     
     # process images
     color_imgs, depth_imgs = process_imgs(imgs_list_np)
@@ -30,7 +33,8 @@ def store_data(filename, data, action):
         'action': action,
         'positions': particle_pos_list_np,
         'eef_states': eef_states_list_np,
-        'observations': {'color': color_imgs, 'depth': depth_imgs}
+        'observations': {'color': color_imgs, 'depth': depth_imgs},
+        'part_2_obj_inst': part_2_obj_inst_list_np
     }
     
     # save to h5py
@@ -52,6 +56,7 @@ def process_imgs(imgs_list):
     return color_imgs, depth_imgs
 
 def save_data(filename, save_data):
+    print(f"saving keys: {save_data.keys()}")
     with h5py.File(filename, 'w') as f:
         for key, value in save_data.items():
             if key in ['observations']:

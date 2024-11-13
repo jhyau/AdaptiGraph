@@ -96,3 +96,22 @@ def load_positions(dataset_config):
     eef_pos = positions['eef_pos'] 
     obj_pos = positions['obj_pos']
     return eef_pos, obj_pos
+
+def load_part_2_instance(dataset_config):
+    ## config
+    data_name = dataset_config['data_name']
+    if "data_folder" in dataset_config.keys():
+        data_folder = dataset_config['data_folder']
+    else:
+        data_folder = data_name
+    prep_dir = os.path.join(dataset_config['prep_data_dir'], data_folder)
+    # prep_dir = os.path.join(dataset_config['prep_data_dir'], data_folder)#+"_set_action_first_try_100_epochs")
+    print(f"load part2obj in load.py, data_dir: {prep_dir}")
+    ## load particle to object instance mapping
+    # "part_2_obj_inst"
+    p2o_path = os.path.join(prep_dir, 'part_2_obj_inst.pkl')
+    if not os.path.exists(p2o_path):
+        return None
+    with open(p2o_path, "rb") as f:
+        p2o = pickle.load(f)
+    return p2o['part_2_obj_inst']

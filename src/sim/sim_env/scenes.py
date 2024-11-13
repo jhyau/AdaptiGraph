@@ -261,6 +261,9 @@ def softbody_scene():
 
     relaxtion_factor = 1.
     collisionDistance = radius * 0.5
+
+    # ratio of particles (from bottom up) to keep fixed
+    num_fixed_particles = 0
     
     # params
     scene_params = np.array([*scale, *trans, radius, 
@@ -269,7 +272,7 @@ def softbody_scene():
                             surface_sampling, volume_sampling, skinning_falloff, skinning_max_dist,
                             cluster_plastic_threshold, cluster_plastic_creep,
                             dynamicFriction, particleFriction, draw_mesh, relaxtion_factor, 
-                            *rotate, collisionDistance])
+                            *rotate, collisionDistance, num_fixed_particles])
     
     property_params = {'particle_radius': radius,
                     'cluster_radius': cluster_radius,
@@ -407,6 +410,9 @@ def multi_obj_scene():
     axis = rand_float(2.5, 3.0)
     flat_scale = np.array([axis, axis, axis]) * 10 #* 50
 
+    # ratio of particles (from bottom up) to keep fixed
+    num_fixed_particles = 0
+
     # params
     scene_params = np.array([*scale, *trans, radius, 
                             cluster_spacing, cluster_radius, cluster_stiffness,
@@ -414,7 +420,7 @@ def multi_obj_scene():
                             surface_sampling, volume_sampling, skinning_falloff, skinning_max_dist,
                             cluster_plastic_threshold, cluster_plastic_creep,
                             dynamicFriction, particleFriction, draw_mesh, relaxtion_factor, 
-                            *rotate, collisionDistance, *box_scale, *box_trans, *flat_scale, *flat_trans])
+                            *rotate, collisionDistance, *box_scale, *box_trans, *flat_scale, *flat_trans, num_fixed_particles])
     
     property_params = {'particle_radius': radius,
                     'cluster_radius': cluster_radius,

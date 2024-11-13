@@ -1,7 +1,7 @@
 dataset:
   folder: "../sim_data" # folder to save data
   obj: "multiobj"
-  save_dir: "part_2_obj_multiobj"
+  save_dir: "fixed_in_place_multiobj"
 
   # data collection
   base: 0

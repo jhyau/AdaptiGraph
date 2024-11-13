@@ -131,6 +131,7 @@ class FlexEnv(gym.Env):
     
     def add_empty_box(self):
         ## Add an empty box on the table for packing scene
+        # TODO: add 3 walls to the box
         self.box_height = 0.25
         self.box_width = 1.0 # 1.0*2=2 grid = 200mm
         self.box_length = 2.0 # 2.0*2=4 grid = 400mm
@@ -484,6 +485,56 @@ class FlexEnv(gym.Env):
             chosen_points = np.arange(num_points)
         
         # random choose a start point which can not be overlapped with the object
+        valid = False
+        for _ in range(1000):
+            startpoint_pos_origin = np.random.uniform(-self.action_space, self.action_space, size=(1, 2))
+            startpoint_pos = startpoint_pos_origin.copy()
+            startpoint_pos = startpoint_pos.reshape(-1)
+
+            # choose end points which is the expolation of the start point and obj point
+            pickpoint = np.random.choice(chosen_points)
+            obj_pos = positions[pickpoint, [0, 2]]
+            slope = (obj_pos[1] - startpoint_pos[1]) / (obj_pos[0] - startpoint_pos[0])
+            if obj_pos[0] < startpoint_pos[0]:
+                # 1.0 for planning
+                # (1.5, 2.0) for data collection
+                x_end = obj_pos[0] - 1.0 #rand_float(1.5, 2.0)
+            else:
+                x_end = obj_pos[0] + 1.0 #rand_float(1.5, 2.0)
+            y_end = slope * (x_end - startpoint_pos[0]) + startpoint_pos[1]
+            endpoint_pos = np.array([x_end, y_end])
+            if obj_pos[0] != startpoint_pos[0] and np.abs(x_end) < 1.5 and np.abs(y_end) < 1.5 \
+                and np.min(cdist(startpoint_pos_origin, pos_xz)) > 0.2:
+                valid = True
+                break
+        
+        if valid:
+            action = np.concatenate([startpoint_pos.reshape(-1), endpoint_pos.reshape(-1)], axis=0)
+        else:
+            action = None
+        
+        return action
+    
+    def sample_top_down_deform_actions(self):
+        ## Have robot poke at the object from top down
+        # Choose an x,z coordinate, change the y coordinate
+        positions = self.get_positions().reshape(-1, 4)
+        positions[:, 2] *= -1 # align with the coordinates
+        num_points = positions.shape[0]
+        pos_xz = positions[:, [0, 2]]
+        
+        pos_x, pos_z = positions[:, 0], positions[:, 2]
+        center_x, center_z = np.median(pos_x), np.median(pos_z)
+        chosen_points = []
+        for idx, (x, z) in enumerate(zip(pos_x, pos_z)):
+            if np.sqrt((x-center_x)**2 + (z-center_z)**2) < 2.0:
+                chosen_points.append(idx)
+        # print(f'chosen points {len(chosen_points)} out of {num_points}.')
+        if len(chosen_points) == 0:
+            print('no chosen points')
+            chosen_points = np.arange(num_points)
+        
+        # TODO: random choose a start point for x,z within the object bounds
         valid = False
         for _ in range(1000):
             startpoint_pos_origin = np.random.uniform(-self.action_space, self.action_space, size=(1, 2))

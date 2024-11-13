@@ -12,7 +12,7 @@ sys.path.append('.')
 from dynamics.gnn.model import DynamicsPredictor
 from sim.utils import load_yaml
 from dynamics.utils import set_seed, truncate_graph, pad, pad_torch
-from dynamics.dataset.load import load_dataset, load_positions
+from dynamics.dataset.load import load_dataset, load_positions, load_part_2_instance
 from dynamics.rollout.graph import construct_graph, get_next_pair_or_break_episode, get_next_pair_or_break_episode_pushes
 from dynamics.rollout.graph import extract_imgs, visualize_graph, moviepy_merge_video
 from dynamics.dataset.graph import construct_edges_from_states
@@ -20,7 +20,7 @@ from dynamics.dataset.graph import construct_edges_from_states
 def rollout_from_start_graph(graph, fps_idx_list, dataset_config, material_config,
                              model, device, eef_pos, obj_pos,
                              current_start, current_end, get_next_pair_or_break_func,
-                             pairs, save_dir, viz, imgs, cam_info, hetero):
+                             pairs, save_dir, viz, imgs, cam_info, part_2_obj_inst, hetero):
 
     obj_mask = graph['obj_mask'].numpy()
     obj_kp_num = obj_mask.sum()
@@ -51,6 +51,7 @@ def rollout_from_start_graph(graph, fps_idx_list, dataset_config, material_confi
         print(f"obj_kp_num: {obj_kp_num}, obj_mask size: {obj_mask.shape}, kp_vis shape: {kp_vis.shape}")
         
         save_dir = os.path.join(save_dir, f"cam_{cam_info['cam']}")
+        print(f"save_dir to be created: {save_dir}")
         os.makedirs(save_dir, exist_ok=True)
 
         physics_param = None
@@ -60,8 +61,9 @@ def rollout_from_start_graph(graph, fps_idx_list, dataset_config, material_confi
         
         pred_kp_proj_last, gt_kp_proj_last, gt_lineset, pred_lineset = \
             visualize_graph(imgs, cam_info, kp_vis, kp_vis, eef_kp, Rr, Rs,
-                            current_start, current_end, 0, save_dir, max_nobj, physics_param=physics_param,
-                            hetero=hetero)
+                            current_start, current_end, 0, save_dir, max_nobj, 
+                            part_2_obj_inst=part_2_obj_inst[0][fps_idx_list], 
+                            physics_param=physics_param, hetero=hetero)
 
     ## prepare graph
     graph = {key: graph[key].unsqueeze(0).to(device) for key in graph.keys()}
@@ -90,6 +92,7 @@ def rollout_from_start_graph(graph, fps_idx_list, dataset_config, material_confi
             # fps for visualization
             obj_kp_vis = obj_kp[:obj_kp_num] # (N_fps, 3)
             gt_kp_vis = gt_kp[:obj_kp_num] # (N_fps, 3)
+            part_2_obj_inst_vis = part_2_obj_inst[current_end][fps_idx_list]
             print(f"obj_kp_num: {obj_kp_num}, obj_kp shape: {obj_kp.shape}, obj_kp_vis shape: {obj_kp_vis.shape}")
             
             # calculate error
@@ -155,6 +158,7 @@ def rollout_from_start_graph(graph, fps_idx_list, dataset_config, material_confi
                                 current_start, current_end, i, save_dir, max_nobj,
                                 gt_lineset=gt_lineset, pred_lineset=pred_lineset,
                                 pred_kp_proj_last=pred_kp_proj_last, gt_kp_proj_last=gt_kp_proj_last,
+                                part_2_obj_inst=part_2_obj_inst_vis,
                                 physics_param=graph[mat_name][:, :obj_kp_num].detach().cpu().numpy(),
                                 hetero=hetero)
                 
@@ -162,12 +166,17 @@ def rollout_from_start_graph(graph, fps_idx_list, dataset_config, material_confi
 
 def rollout_episode_pushes(model, device, dataset_config, material_config,
                         eef_pos, obj_pos, episode_idx, pairs, physics_param,
-                        save_dir, viz, imgs, cam_info, keep_prev_fps, hetero):
+                        save_dir, viz, imgs, cam_info, part_2_obj_inst, keep_prev_fps, hetero):
     n_his = dataset_config['n_his']
     
     ## get steps
     #pairs_path = os.path.join(dataset_config['prep_data_dir'], dataset_config['data_name']+"_set_action_first_try_100_epochs", 'frame_pairs')
-    pairs_path = os.path.join(dataset_config['prep_data_dir'], dataset_config['data_name'], 'frame_pairs')
+    data_name = dataset_config['data_name']
+    if "data_folder" in dataset_config.keys():
+        data_folder = dataset_config['data_folder']
+    else:
+        data_folder = data_name
+    pairs_path = os.path.join(dataset_config['prep_data_dir'], data_folder, 'frame_pairs')
     pairs_list = sorted(list(glob.glob(os.path.join(pairs_path, f'{episode_idx:06}_*.txt'))))
     num_steps = len(pairs_list)
     print(f"num steps: {num_steps}, pairs_path: {pairs_path}")
@@ -183,10 +192,16 @@ def rollout_episode_pushes(model, device, dataset_config, material_config,
         
         eef_pos_epi = eef_pos[episode_idx] # (T, N_eef, 3)
         obj_pos_epi = obj_pos[episode_idx] # (T, N_obj, 3)
+        if part_2_obj_inst:
+            part_2_obj_inst_epi = part_2_obj_inst[episode_idx] # (T, N_obj, 1)
+            print(f"obj_pos_epi shape: {obj_pos_epi.shape}, part2obj shape: {part_2_obj_inst_epi.shape}")
+        else:
+            part_2_obj_inst_epi = None
     
         ## construct graph
         graph, fps_idx_list, fps2phys = construct_graph(dataset_config, material_config, eef_pos_epi, obj_pos_epi,
-                                        n_his, pair, physics_param, prev_fps_idx_list=prev_fps_idx_list, fps2phys=fps2phys,
+                                        n_his, pair, physics_param, part_2_obj_inst=part_2_obj_inst_epi,
+                                        prev_fps_idx_list=prev_fps_idx_list, fps2phys=fps2phys,
                                         hetero=hetero)
     
         # Use the same fps indices after the first sampling
@@ -198,7 +213,7 @@ def rollout_episode_pushes(model, device, dataset_config, material_config,
         error_list = rollout_from_start_graph(graph, fps_idx_list, dataset_config, material_config,
                                           model, device, eef_pos_epi, obj_pos_epi,
                                           start, end, get_next_pair_or_break_episode_pushes,
-                                          pairs, save_dir, viz, imgs, cam_info, hetero)
+                                          pairs, save_dir, viz, imgs, cam_info, part_2_obj_inst_epi, hetero)
         
         error_list_pushes.append(error_list)
         
@@ -239,6 +254,9 @@ def rollout_dataset(model, device, config, save_dir, viz, keep_prev_fps, hetero)
     
     ## load positions
     eef_pos, obj_pos = load_positions(dataset_config)
+
+    ## load particle to object instance mapping
+    part_2_obj_inst = load_part_2_instance(dataset_config)
     
     ## rollout
     total_error_short = []
@@ -261,7 +279,8 @@ def rollout_dataset(model, device, config, save_dir, viz, keep_prev_fps, hetero)
         error_list_short = rollout_episode_pushes(model, device, dataset_config, material_config,
                                         eef_pos, obj_pos, episode_idx,
                                         pair_lists_episode, physics_params_episode,
-                                        save_dir_episode_pushes, viz, imgs, cam_info, keep_prev_fps, hetero)
+                                        save_dir_episode_pushes, viz, imgs, cam_info, part_2_obj_inst, 
+                                        keep_prev_fps, hetero)
         total_error_short.extend(error_list_short)
     
     ## final statistics

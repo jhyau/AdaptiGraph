@@ -226,6 +226,7 @@ class by_MultiObjects: public Scene
             obj.mClusterPlasticCreep = clusterPlasticCreep;
             AddInstance(obj);
 
+            int fixed_particles = (int) ptr[40];
 
             // no fluids or sdf based collision
             g_solverDesc.featureMode = eNvFlexFeatureModeSimpleSolids;
@@ -256,7 +257,7 @@ class by_MultiObjects: public Scene
             // build soft bodies 
             for (int i = 0; i < int(mInstances.size()); i++) {
                 std::cout << "adding instance " << i << ", mRenderingInstances size: " << mRenderingInstances.size() << std::endl;
-                CreateSoftBody(i, mInstances[i], mRenderingInstances.size());
+                CreateSoftBody(fixed_particles, i, mInstances[i], mRenderingInstances.size());
             }
 
             if (mPlinth) 
@@ -266,6 +267,7 @@ class by_MultiObjects: public Scene
             for (int i = 0; i < int(g_buffers->positions.size()); ++i)
                 if (g_buffers->positions[i].y < 0.4f)
                     g_buffers->positions[i].w = 0.0f;
+                    std::cout << "below ground fixed particle" << std::endl;
 
             // expand radius for better self collision
             g_params.radius *= 1.5f;
@@ -273,7 +275,7 @@ class by_MultiObjects: public Scene
             g_lightDistance *= 1.5f;
         }
 
-        void CreateSoftBody(int instanceIndex, Instance instance, int group = 0, bool texture=false)
+        void CreateSoftBody(int fixed_particles, int instanceIndex, Instance instance, int group = 0, bool texture=false)
         {
             RenderingInstance renderingInstance;
 
@@ -346,6 +348,7 @@ class by_MultiObjects: public Scene
             std::cout << "part2objInstance size: " << g_buffers->particle2objInstance.size() << std::endl;
             // std::cout << "part2objInstance sizeof: " << sizeof(g_buffers->particle2objInstance) << std::endl;
             std::cout << "asset->numShapes:" << asset->numShapes << std::endl;
+            std::vector<float> y_coordinates;
             for (int i = 0; i < asset->numParticles; ++i)
             {
                 g_buffers->positions.push_back(&asset->particles[i * 4]);
@@ -353,9 +356,36 @@ class by_MultiObjects: public Scene
                 // Add the particle's corresponding instance index
                 // std::cout << "right before adding instance index to part2obj for instance " << instanceIndex << ", at particle num: " << i << std::endl;
                 g_buffers->particle2objInstance.push_back(instanceIndex);
+                y_coordinates.push_back(g_buffers->positions[g_buffers->positions.size()-1].y);
 
                 const int phase = NvFlexMakePhase(group, eNvFlexPhaseSelfCollide | eNvFlexPhaseSelfCollideFilter);
                 g_buffers->phases.push_back(phase);
+            }
+
+            // fix the particles closest to the ground (bottom layer) by setting inverse mass to 0 (mass -> inf)
+            // sort the particles by y coord, determine which ones are "lowest" to set to be fixed in place
+            // Get all the y-coordinates
+            if (fixed_particles > 0) {
+                std::sort(y_coordinates.begin(), y_coordinates.end());
+                float min_y_coord = y_coordinates[0];
+                float max_y_coord = y_coordinates[y_coordinates.size()-1];
+                std::cout << "min y_coord: " << min_y_coord << ", max y_coord: " << max_y_coord << std::endl;
+                // Set lowest 1/(fixed_particles) to be fixed
+                float threshold = y_coordinates[(int)(y_coordinates.size() / fixed_particles)];
+                std::cout << "y-coord threshold: " << threshold << std::endl;
+                // Start for the particles of this instance only
+                int start = (g_buffers->positions.size() - asset->numParticles);
+                std::cout << "starting index for determining which points to be fixed: " << start << std::endl;
+                std::cout << "size of positions vector: " << g_buffers->positions.size() << std::endl;
+                int count = 0;
+                for (int i = start; i < int(g_buffers->positions.size()); ++i) {
+                    if (g_buffers->positions[i].y < threshold) {
+                        g_buffers->positions[i].w = 0.0f;
+                        count++;
+                        // std::cout << "fixed particle based on calculation" << std::endl;
+                    }
+                }
+                std::cout << "num particles that are fixed: " << count << std::endl;
             }
 
             // add shape data to solver

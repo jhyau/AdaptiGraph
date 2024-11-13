@@ -21,7 +21,11 @@ def moviepy_merge_video(image_path, image_type, out_path, fps=20):
 def extract_imgs(dataset_config, episode_idx, cam=0):
     ## config
     data_name = dataset_config['data_name']
-    data_dir = os.path.join(dataset_config['data_dir'], data_name)#+"_set_action_first_try_100_epochs")
+    if "data_folder" in dataset_config.keys():
+        data_folder = dataset_config['data_folder']
+    else:
+        data_folder = data_name
+    data_dir = os.path.join(dataset_config['data_dir'], data_folder)#+"_set_action_first_try_100_epochs")
     print(f"extract imgs data_dir: {data_dir}")
     
     ## load images
@@ -48,7 +52,8 @@ def visualize_graph(imgs, cam_info,
         start, end, vis_t, save_dir, max_nobj,
         colormap=None, point_size=4, edge_size=1, line_size=2, line_alpha=0.5, t_line=5,
         gt_lineset=None, pred_lineset=None, 
-        pred_kp_proj_last=None, gt_kp_proj_last=None, physics_param=None, hetero=False):
+        pred_kp_proj_last=None, gt_kp_proj_last=None, part_2_obj_inst=None,
+        physics_param=None, hetero=False):
     
     if colormap is None:
         colormap = rgb_colormap(repeat=100)
@@ -133,8 +138,8 @@ def visualize_graph(imgs, cam_info,
     #with open(os.path.join(save_dir,  f'{start:06}_{end:06}_pred_phys_param_color_map.txt'), "w") as f:
     #    for key in phys2color.keys():
     #        f.write(f"physics param value: {key}, color: {phys2color[key]}\n")
-
     color_step = int(255 / len(phys2color))
+    print(f"num object kp proj particles: {obj_kp_proj.shape[0]}")
     for k in range(obj_kp_proj.shape[0]):
         if hetero:
             phys_param = physics_param.squeeze()[k]
@@ -142,6 +147,18 @@ def visualize_graph(imgs, cam_info,
             print(f"visualizing obj particles, phys param: {phys_param}, color: {col}")
             cv2.circle(img, (int(obj_kp_proj[k, 0]), int(obj_kp_proj[k, 1])), point_size,
                 #(col*color_step, 0, 0), -1)
+                col , -1)
+        elif part_2_obj_inst is not None:
+            print("visualizing based on part2obj instance particles by color")
+            print(f"size of part2object: {part_2_obj_inst.shape}")
+            part2color = {}
+            part2color[0] = (255, 0, 0)
+            part2color[1] = (255, 127, 127)
+            part2color[2] = (255, 255, 255)
+            instance_num = part_2_obj_inst.squeeze()[k]
+            col = part2color[instance_num]
+            print(f"visualizing obj particles, instance num: {instance_num}, color: {col}")
+            cv2.circle(img, (int(obj_kp_proj[k, 0]), int(obj_kp_proj[k, 1])), point_size,
                 col , -1)
         else:
             # print(f"homogeneous color for all obj particles")
@@ -204,10 +221,24 @@ def visualize_graph(imgs, cam_info,
     gt_kp_proj[:, 1] = gt_kp_homo[:, 1] * fy / gt_kp_homo[:, 2] + cy
 
     gt_kp_proj_list.append(gt_kp_proj)
-                
+    
+    print(f"gt key points shape: {gt_kp_proj.shape[0]}")
     for k in range(gt_kp_proj.shape[0]):
-        cv2.circle(img, (int(gt_kp_proj[k, 0]), int(gt_kp_proj[k, 1])), point_size, 
-            (int(colormap[k, 2]), int(colormap[k, 1]), int(colormap[k, 0])), -1)
+        if part_2_obj_inst is not None:
+            print("visualizing gt based on part2obj instance particles by color")
+            print(f"size of part2object: {part_2_obj_inst.shape}")
+            part2color = {}
+            part2color[0] = (255, 0, 0)
+            part2color[1] = (255, 127, 127)
+            part2color[2] = (255, 255, 255)
+            instance_num = part_2_obj_inst.squeeze()[k]
+            col = part2color[instance_num]
+            print(f"visualizing gt particles, instance num: {instance_num}, color: {col}")
+            cv2.circle(img, (int(gt_kp_proj[k, 0]), int(gt_kp_proj[k, 1])), point_size, 
+                col, -1)
+        else:
+            cv2.circle(img, (int(gt_kp_proj[k, 0]), int(gt_kp_proj[k, 1])), point_size, 
+                (int(colormap[k, 2]), int(colormap[k, 1]), int(colormap[k, 0])), -1)
 
     gt_kp_last = gt_kp_proj_last[0]
     if not (gt_kp_last is None):
@@ -261,7 +292,7 @@ def visualize_graph(imgs, cam_info,
 
 
 def construct_graph(dataset_config, material_config, eef_pos, obj_pos,
-                    n_his, pair, physics_param, prev_fps_idx_list=None, fps2phys=None, hetero=False):
+                    n_his, pair, physics_param, part_2_obj_inst=None, prev_fps_idx_list=None, fps2phys=None, hetero=False):
     print("constructing graph for rollout...")
     # prev_fps_idx_list will not be None if using the same FPS indices for all time steps. It's the list of FPS indices
     # fps2phys will not be None if using prev_fps_idx_list, it will map each fps idx to phys param once (sorts by z,x,y)
@@ -317,6 +348,10 @@ def construct_graph(dataset_config, material_config, eef_pos, obj_pos,
     # fps_obj_kps: (T, N_obj, 3)
     fps_obj_kp = obj_kps[:, fps_idx_list] # (T, N_fps, 3)
     fps_obj_kps = pad(fps_obj_kp, max_nobj, dim=1) # (T, N_obj, 3)
+
+    ## Get object keypoints mapping to object instance
+    # fps_part_2_obj_kp = part_2_obj_inst[:, fps_idx_list] # (T, N_fps, 1)
+    # fps_part_2_obj_kps = pad(fps_part_2_obj_kp, max_nobj, dim=1) # (T, N_obj, 1)
     
     ## get current state delta (action)
     # states_delta: (N_obj + N_eef, 3)

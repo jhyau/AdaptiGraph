@@ -163,6 +163,8 @@ public:
 
 		float collisionDistance = ptr[27];
 
+		int fixed_particles = (int) ptr[28];
+
 		char box_path[100];
 		// Instance box(make_path(box_path, "/data/box.ply"));
         Instance box(make_path(box_path, "/data/rigid/cube_mesh.ply"));
@@ -213,7 +215,7 @@ public:
 
 		// build soft bodies 
 		// for (int i = 0; i < int(mInstances.size()); i++)
-		CreateSoftBody(mInstances[0], mRenderingInstances.size());
+		CreateSoftBody(fixed_particles, mInstances[0], mRenderingInstances.size());
 
 		if (mPlinth) 
 			AddPlinth();
@@ -229,7 +231,7 @@ public:
 		g_lightDistance *= 1.5f;
 	}
 
-	void CreateSoftBody(Instance instance, int group = 0, bool texture=false)
+	void CreateSoftBody(int fixed_particles, Instance instance, int group = 0, bool texture=false)
 	{
 		RenderingInstance renderingInstance;
 
@@ -296,17 +298,44 @@ public:
 		const int particleOffset = g_buffers->positions.size();
 		const int indexOffset = g_buffers->rigidOffsets.back();
 
+		std::vector<float> y_coordinates;
 		// add particle data to solver
 		std::cout << "asset->numShapes:" << asset->numShapes << std::endl;
 		for (int i = 0; i < asset->numParticles; ++i)
 		{
 			g_buffers->positions.push_back(&asset->particles[i * 4]);
 			g_buffers->velocities.push_back(0.0f);
+			y_coordinates.push_back(g_buffers->positions[g_buffers->positions.size()-1].y);
 
 			const int phase = NvFlexMakePhase(group, eNvFlexPhaseSelfCollide | eNvFlexPhaseSelfCollideFilter);
 			g_buffers->phases.push_back(phase);
 		}
 
+		// fix the particles closest to the ground (bottom layer) by setting inverse mass to 0 (mass -> inf)
+		// sort the particles by y coord, determine which ones are "lowest" to set to be fixed in place
+		// Get all the y-coordinates
+		if (fixed_particles > 0) {
+			std::sort(y_coordinates.begin(), y_coordinates.end());
+			float min_y_coord = y_coordinates[0];
+			float max_y_coord = y_coordinates[y_coordinates.size()-1];
+			std::cout << "min y_coord: " << min_y_coord << ", max y_coord: " << max_y_coord << std::endl;
+			// Set lowest 1/3 to be fixed
+			float threshold = y_coordinates[(int)(y_coordinates.size() / fixed_particles)];
+			std::cout << "y-coord threshold: " << threshold << std::endl;
+			// Start for the particles of this instance only
+			int start = (g_buffers->positions.size() - asset->numParticles);
+			std::cout << "starting index for determining which points to be fixed: " << start << std::endl;
+			std::cout << "size of positions vector: " << g_buffers->positions.size() << std::endl;
+			int count = 0;
+			for (int i = start; i < int(g_buffers->positions.size()); ++i) {
+				if (g_buffers->positions[i].y < threshold) {
+					g_buffers->positions[i].w = 0.0f;
+					count++;
+					// std::cout << "fixed particle based on calculation" << std::endl;
+				}
+			}
+			std::cout << "num particles that are fixed: " << count << std::endl;
+		}
 		// add shape data to solver
 		for (int i = 0; i < asset->numShapeIndices; ++i)
 			g_buffers->rigidIndices.push_back(asset->shapeIndices[i] + particleOffset);
