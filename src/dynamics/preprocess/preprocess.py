@@ -162,6 +162,7 @@ def preprocess(config):
     save_dir = os.path.join(dataset_config['prep_data_dir'], data_folder)
     push_save_dir = os.path.join(save_dir, 'frame_pairs')
     os.makedirs(push_save_dir, exist_ok=True)
+    print(f"preprocess save dir: {save_dir}")
     
     n_his = dataset_config['n_his']
     n_future = dataset_config['n_future']

@@ -115,7 +115,7 @@ class FlexEnv(gym.Env):
         self.table_shape_states[0] = np.concatenate([center, center, quats, quats])
         
         # table for robot
-        if self.obj in ['cloth', 'softbody', 'bunnybath', 'multiobj']: #'softbody'
+        if self.obj in ['cloth', 'bunnybath', 'multiobj']: #'softbody'
             robot_table_height = 0.5 + 1.0
         else:
             robot_table_height = 0.5 + 0.3
@@ -151,14 +151,14 @@ class FlexEnv(gym.Env):
             self.robotId = pyflex.loadURDF(self.flex_robot_helper, 'sim/assets/xarm/xarm6_with_gripper_board.urdf', 
                                            robot_base_pos, robot_base_orn, globalScaling=10.0) 
             self.rest_joints = np.zeros(8)
-        elif self.obj in ['rope']:
+        elif self.obj in ['rope', 'softbody']:
             # stick pusher
             robot_base_pos = [-self.wkspace_width-0.6, 0., self.wkspace_height+0.3]
             robot_base_orn = [0, 0, 0, 1]
             self.robotId = pyflex.loadURDF(self.flex_robot_helper, 'sim/assets/xarm/xarm6_with_gripper.urdf', 
                                            robot_base_pos, robot_base_orn, globalScaling=10.0) 
             self.rest_joints = np.zeros(8)
-        elif self.obj in ['cloth', 'softbody', 'bunnybath', 'multiobj']: #'softbody'
+        elif self.obj in ['cloth', 'bunnybath', 'multiobj']: #'softbody'
             # gripper
             robot_base_pos = [-self.wkspace_width-0.6, 0., self.wkspace_height+1.0]
             robot_base_orn = [0, 0, 0, 1]
@@ -453,13 +453,17 @@ class FlexEnv(gym.Env):
         pyflex.clean()
     
     def sample_action(self, init=False, boundary_points=None, boundary=None):
-        if self.obj in ['rope', 'granular']:
+        if self.obj in ['rope', 'granular', 'softbody']:
             action = self.sample_deform_actions()
             return action
         elif self.obj in ['cloth', 'bunnybath']: #'softbody'
             action, boundary_points, boundary = self.sample_grasp_actions_corner(init, boundary_points, boundary)
             return action, boundary_points, boundary
-        elif self.obj in ['multiobj', 'softbody']:
+        # elif self.obj in ['softbody']:
+        #     # This movement is in the y-coordinate, x and z should be fixed for each action
+        #     action = self.sample_top_down_deform_actions()
+        #     return action
+        elif self.obj in ['multiobj']:
             #print("!!!!!!!!!!!!!!!!!grasping whole obj!!!!!!!!!!!!!!!")
             #action, boundary_points, boundary = self.sample_grasp_actions_whole_obj(init, boundary_points, boundary)
             action, boundary_points, boundary = self.sample_grasp_actions_corner(init, boundary_points, boundary)
@@ -522,37 +526,43 @@ class FlexEnv(gym.Env):
         positions[:, 2] *= -1 # align with the coordinates
         num_points = positions.shape[0]
         pos_xz = positions[:, [0, 2]]
+        pos_xyz = positions[:, :]
         
-        pos_x, pos_z = positions[:, 0], positions[:, 2]
-        center_x, center_z = np.median(pos_x), np.median(pos_z)
+        pos_x, pos_y, pos_z = positions[:, 0], positions[:, 1], positions[:, 2]
+        center_x, center_y, center_z = np.median(pos_x), np.median(pos_y), np.median(pos_z)
         chosen_points = []
-        for idx, (x, z) in enumerate(zip(pos_x, pos_z)):
-            if np.sqrt((x-center_x)**2 + (z-center_z)**2) < 2.0:
+        for idx, (x, y, z) in enumerate(zip(pos_x, pos_y, pos_z)):
+            if np.sqrt((x-center_x)**2 + (y-center_y)**2 + (z-center_z)**2) < 2.0:
                 chosen_points.append(idx)
-        # print(f'chosen points {len(chosen_points)} out of {num_points}.')
+        print(f'chosen points {len(chosen_points)} out of {num_points}.')
         if len(chosen_points) == 0:
             print('no chosen points')
             chosen_points = np.arange(num_points)
         
         # TODO: random choose a start point for x,z within the object bounds
+        # y needs to be above the object
+        print(f"action dim for top down poking: {self.action_dim}")
+        print(f"action space for top down poking: {self.action_space}")
         valid = False
         for _ in range(1000):
-            startpoint_pos_origin = np.random.uniform(-self.action_space, self.action_space, size=(1, 2))
+            startpoint_pos_origin = np.random.uniform(-self.action_space, self.action_space, size=(1, 3))
             startpoint_pos = startpoint_pos_origin.copy()
             startpoint_pos = startpoint_pos.reshape(-1)
 
             # choose end points which is the expolation of the start point and obj point
             pickpoint = np.random.choice(chosen_points)
-            obj_pos = positions[pickpoint, [0, 2]]
-            slope = (obj_pos[1] - startpoint_pos[1]) / (obj_pos[0] - startpoint_pos[0])
-            if obj_pos[0] < startpoint_pos[0]:
-                # 1.0 for planning
-                # (1.5, 2.0) for data collection
-                x_end = obj_pos[0] - 1.0 #rand_float(1.5, 2.0)
-            else:
-                x_end = obj_pos[0] + 1.0 #rand_float(1.5, 2.0)
-            y_end = slope * (x_end - startpoint_pos[0]) + startpoint_pos[1]
-            endpoint_pos = np.array([x_end, y_end])
+            obj_pos = positions[pickpoint, :]
+            #slope = (obj_pos[1] - startpoint_pos[1]) / (obj_pos[0] - startpoint_pos[0])
+            vertical = (obj_pos[1] - startpoint_pos[1])
+            # if obj_pos[0] < startpoint_pos[0]:
+            #     # 1.0 for planning
+            #     # (1.5, 2.0) for data collection
+            #     x_end = obj_pos[0] - 1.0 #rand_float(1.5, 2.0)
+            # else:
+            #     x_end = obj_pos[0] + 1.0 #rand_float(1.5, 2.0)
+            #y_end = slope * (x_end - startpoint_pos[0]) + startpoint_pos[1]
+            y_end = vertical
+            endpoint_pos = np.array([startpoint_pos[0], y_end, startpoint_pos[2]]) #np.array([x_end, y_end])
             if obj_pos[0] != startpoint_pos[0] and np.abs(x_end) < 1.5 and np.abs(y_end) < 1.5 \
                 and np.min(cdist(startpoint_pos_origin, pos_xz)) > 0.2:
                 valid = True

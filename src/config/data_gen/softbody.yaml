@@ -1,12 +1,13 @@
 dataset:
   folder: "../sim_data" # folder to save data
   obj: "softbody"
+  save_dir: "fixed_10_x_stick_pusher_softbody"
 
   # data collection
   base: 0
-  n_episode: 5
+  n_episode: 2
   n_timestep: 5
-  n_worker: 5
+  n_worker: 2
   
   # sim env
   headless: True # False: OpenGL visualization
@@ -16,19 +17,19 @@ dataset:
 
   robot_type: 'xarm6' 
   robot_end_idx: 6
-  #robot_num_dofs: 6
-  #robot_speed_inv: 300
-  robot_num_dofs: 12
-  robot_speed_inv: 100
+  robot_num_dofs: 6
+  robot_speed_inv: 300
+  #robot_num_dofs: 12
+  #robot_speed_inv: 100
   
-  action_dim: 4 # [x_start, z_start, x_end, z_end]
-  action_space: 4 # random action space scope
+  action_dim: 4 # now needs to include y_start, y_end. Prev: 4 [x_start, z_start, x_end, z_end]
+  action_space: 4 # 4 random action space scope
 
   # Tool
-  #gripper: False
-  #pusher_len: 1.0
-  gripper: True
-  pusher_len: 1.8
+  gripper: False
+  pusher_len: 1.0
+  #gripper: True
+  #pusher_len: 1.8
   
   # Save particles
   fps: False

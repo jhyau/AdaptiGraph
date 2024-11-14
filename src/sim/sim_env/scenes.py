@@ -211,7 +211,7 @@ def softbody_scene():
     edge_length = rand_float(2.5, 3.0)
     print(f"edge_length: {edge_length}")
     #rope_thickness = 3.0
-    scale = np.array([edge_length, edge_length, edge_length]) * 10 #* 50
+    scale = np.array([edge_length, edge_length, edge_length]) * 30 #* 50
     
     # softbody stiffness
     stiffness = np.random.rand()
@@ -263,8 +263,11 @@ def softbody_scene():
     collisionDistance = radius * 0.5
 
     # ratio of particles (from bottom up) to keep fixed
-    num_fixed_particles = 0
-    
+    num_fixed_particles = 10
+
+    # coordinate to determine which particles are fixed (x,y, or z)
+    fixed_coord = 0
+
     # params
     scene_params = np.array([*scale, *trans, radius, 
                             cluster_spacing, cluster_radius, cluster_stiffness,
@@ -272,7 +275,7 @@ def softbody_scene():
                             surface_sampling, volume_sampling, skinning_falloff, skinning_max_dist,
                             cluster_plastic_threshold, cluster_plastic_creep,
                             dynamicFriction, particleFriction, draw_mesh, relaxtion_factor, 
-                            *rotate, collisionDistance, num_fixed_particles])
+                            *rotate, collisionDistance, num_fixed_particles, fixed_coord])
     
     property_params = {'particle_radius': radius,
                     'cluster_radius': cluster_radius,
@@ -401,9 +404,9 @@ def multi_obj_scene():
     #rope_thickness = 3.0
     box_scale = np.array([box_edge_length, box_edge_length, box_edge_length]) * 20
 
-    # flat circle scale and trans
+    # flat circle/sphere scale and trans
     # softbody trans position
-    flat_trans = [0, 0.5, -1.0] # [x, y, z]
+    flat_trans = [-0.5, 0.5, -1.0] # [x, y, z]
 
     # softbody scale
     #rope_thickness = 3.0
@@ -413,6 +416,9 @@ def multi_obj_scene():
     # ratio of particles (from bottom up) to keep fixed
     num_fixed_particles = 0
 
+    # which coordinate to fix (x,y,or z)
+    fixed_coord = 1
+
     # params
     scene_params = np.array([*scale, *trans, radius, 
                             cluster_spacing, cluster_radius, cluster_stiffness,
@@ -420,7 +426,8 @@ def multi_obj_scene():
                             surface_sampling, volume_sampling, skinning_falloff, skinning_max_dist,
                             cluster_plastic_threshold, cluster_plastic_creep,
                             dynamicFriction, particleFriction, draw_mesh, relaxtion_factor, 
-                            *rotate, collisionDistance, *box_scale, *box_trans, *flat_scale, *flat_trans, num_fixed_particles])
+                            *rotate, collisionDistance, *box_scale, *box_trans, *flat_scale, *flat_trans, 
+                            num_fixed_particles, fixed_coord])
     
     property_params = {'particle_radius': radius,
                     'cluster_radius': cluster_radius,

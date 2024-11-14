@@ -1,7 +1,7 @@
 dataset_config:
   data_name: "multiobj"
-  output_name: "fixed_in_place_multiobj-3-far-apart-homo-connect-all-false-softbody_keep_fps"
-  data_folder: "fixed_in_place_multiobj"
+  output_name: "p2o_multiobj-3-far-apart-homo-connect-all-false-softbody_keep_fps"
+  data_folder: "p2o_multiobj"
   materials: ["multiobj"]
   data_dir: "../sim_data" # data directory
   prep_data_dir: "../preprocess" # preprocessed data directory
