@@ -216,6 +216,8 @@ class DynamicsPredictor(nn.Module):
         #print(f"physics_param: {physics_param}, p_inputs: {p_inputs.size()}")
 
         # action
+        print(f"action (states_delta) size in gnn forward (from graph): {action.size()}")
+        # print(f"action in gnn forward: {action}")
         if self.model_config['action_dim'] > 0:
             assert action is not None
             p_inputs = torch.cat([p_inputs, action], 2)

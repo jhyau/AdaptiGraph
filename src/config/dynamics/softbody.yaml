@@ -1,7 +1,7 @@
 dataset_config:
   data_name: "softbody"
-  output_name: "fixed-10-x-softbody-stick-pusher-homo-connect-all-false-keep-fps"
-  data_folder: "fixed_10_x_stick_pusher_softbody"
+  output_name: "shallow-poke-fixed_10_x_stick_pusher_same_xz_start_softbody_softbody-homo-connect-all-false-keep-fps"
+  data_folder: "shallow-poke-fixed_10_x_stick_pusher_same_xz_start_softbody"
   materials: ["softbody"]
   data_dir: "../sim_data" # data directory
   prep_data_dir: "../preprocess" # preprocessed data directory
@@ -74,7 +74,7 @@ model_config:
   attr_dim: 2 # object and eef
   state_dim: 0 # x, y, z 
   offset_dim: 0
-  action_dim: 3
+  action_dim: 3 # action from construct graph is states_delta: (N_obj + N_eef, 3)
   density_dim: 0 # particle density
 
   pstep: 3 # propagation steps

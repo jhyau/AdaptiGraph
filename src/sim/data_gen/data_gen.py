@@ -35,7 +35,7 @@ def gen_data(info):
     print('episode start:', idx_episode)
     
     # reset env
-    # data: [imgs_list, particle_pos_list, eef_states_list]
+    # data: [imgs_list, particle_pos_list, eef_states_list, particle_2_obj_inst_list]
     data = env.reset(save_data)
     
     # get physics params
@@ -104,7 +104,7 @@ def gen_data(info):
                 #     u = np.array([0.2, 0.3, 0.0, 0.0])
             # write out to file the action
             print(f"episode {idx_episode}, time step: {idx_timestep}, action: {u}")
-            np.save(os.path.join(epi_dir, f'action_{idx_timestep:02}.npy'), u)
+            # np.save(os.path.join(epi_dir, f'action_{idx_timestep:02}.npy'), u)
             
             if u is None:
                 stuck = True

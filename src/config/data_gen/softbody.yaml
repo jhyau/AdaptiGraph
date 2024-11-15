@@ -1,7 +1,7 @@
 dataset:
   folder: "../sim_data" # folder to save data
   obj: "softbody"
-  save_dir: "fixed_10_x_stick_pusher_softbody"
+  save_dir: "slower-poke-fixed_10_x_stick_pusher_same_xz_start_softbody"
 
   # data collection
   base: 0
@@ -22,8 +22,8 @@ dataset:
   #robot_num_dofs: 12
   #robot_speed_inv: 100
   
-  action_dim: 4 # now needs to include y_start, y_end. Prev: 4 [x_start, z_start, x_end, z_end]
-  action_space: 4 # 4 random action space scope
+  action_dim: 6 # now needs to include y_start, y_end. Prev: 4 [x_start, z_start, x_end, z_end]
+  action_space: 6 # 4 random action space scope
 
   # Tool
   gripper: False
