@@ -193,11 +193,13 @@ def rollout_episode_pushes(model, device, dataset_config, material_config,
     error_list_pushes = []
     prev_fps_idx_list = None
     fps2phys = None
+    print(f"pairs list: {pairs_list}")
     for i in range(num_steps):
         valid_pairs = np.loadtxt(pairs_list[i]).astype(int)
         pair = valid_pairs[0] 
         start = pair[n_his-1]
         end = pair[n_his]
+        print(f"pair: {pair}, start: {start}, end: {end}")
         
         eef_pos_epi = eef_pos[episode_idx] # (T, N_eef, 3)
         obj_pos_epi = obj_pos[episode_idx] # (T, N_obj, 3)

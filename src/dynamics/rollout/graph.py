@@ -284,6 +284,7 @@ def visualize_graph(imgs, cam_info,
         ln = gt_lineset[0][k]
         cv2.line(img_overlay, (ln[0], ln[1]), (ln[2], ln[3]), (ln[4], ln[5], ln[6]), line_size)
     
+    print(f"saving image, start: {start}, end: {end}")
     cv2.imwrite(os.path.join(save_dir, f'{start:06}_{end:06}_gt.jpg'), img)
     img_gt = img.copy()
 

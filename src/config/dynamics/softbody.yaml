@@ -1,7 +1,7 @@
 dataset_config:
   data_name: "softbody"
-  output_name: "s-m-e-waypoints-softbody"
-  data_folder: "s-m-e-waypoints-softbody"
+  output_name: "pre-training-fixed-y-s-m-e-e-waypoints-softbody"
+  data_folder: "pre-training-fixed-y-s-m-e-e-waypoints-softbody"
   materials: ["softbody"]
   #data_dir: "../sim_data" # data directory
   data_dir: "/media/motion/Elements/adaptigraph/sim_data"

@@ -337,7 +337,8 @@ class FlexEnv(gym.Env):
                 # need stay at the target for a while
                 print(f"using new poke waypoints")
                 increment = (e_2d[2] - s_2d[2]) / 2
-                way_points = [s_2d, s_2d + [0., 0., increment], e_2d]
+                print(f"using new poke waypoints, increment: {increment}")
+                way_points = [s_2d, s_2d + [0., 0., increment], e_2d, e_2d]
         self.reset_robot(self.rest_joints)
         print(way_points)
 
@@ -424,14 +425,20 @@ class FlexEnv(gym.Env):
                 ## ================================================================
 
                 # save img in each step
-                obj_pos = self.get_positions().reshape(-1, 4)[:, [0, 2]]
-                obj_pos[:, 1] *= -1
-                robot_obj_dist = np.min(cdist(end_effector_pos[:2].reshape(1, 2), obj_pos))
+                if self.poke:
+                    obj_pos = self.get_positions().reshape(-1, 4)[:, [0, 1, 2]]
+                    obj_pos[:, 2] *= -1
+                    robot_obj_dist = np.min(cdist(end_effector_pos[:3].reshape(1, 3), obj_pos))
+                else:
+                    obj_pos = self.get_positions().reshape(-1, 4)[:, [0, 2]]
+                    obj_pos[:, 1] *= -1
+                    robot_obj_dist = np.min(cdist(end_effector_pos[:2].reshape(1, 2), obj_pos))
                 if save_data:
                     rob_obj_dist_thresh = self.dataset_config['rob_obj_dist_thresh']
                     contact_interval = self.dataset_config['contact_interval']
                     non_contact_interval = self.dataset_config['non_contact_interval']
                     if robot_obj_dist < rob_obj_dist_thresh and i % contact_interval == 0: # robot-object contact
+                        print(f"robot contact with object!!")
                         self.store_data()
                     elif i % non_contact_interval == 0: # not contact
                         self.store_data()
@@ -556,7 +563,7 @@ class FlexEnv(gym.Env):
         center_x, center_y, center_z = np.median(pos_x), np.median(pos_y), np.median(pos_z)
         chosen_points = []
         for idx, (x, y, z) in enumerate(zip(pos_x, pos_y, pos_z)):
-            # only choose obj particles that are upper half of y position and: y >= center_y
+            # only choose obj particles that are lower half of y position: and y <= center_y
             if np.sqrt((x-center_x)**2 + (y-center_y)**2 + (z-center_z)**2) < 2.0:
                 chosen_points.append(idx)
         print(f'chosen points {len(chosen_points)} out of {num_points}.')
@@ -576,11 +583,11 @@ class FlexEnv(gym.Env):
 
             # startpoint_pos = [x_start, z_start, y_start]
             #startpoint_pos_origin = np.random.uniform(-self.action_space, self.action_space, size=(1, 3))
-            y_start = np.random.uniform(obj_pos[1] + 1.0, obj_pos[1] + self.action_dim)
-            startpoint_pos_origin = np.array([obj_pos[0], obj_pos[2], y_start]).reshape(1,3)
+            y_start = np.random.uniform(np.max(pos_y) + 1.0, np.max(pos_y) + 4.0)
+            startpoint_pos_origin = np.array([obj_pos[0]-1.0, obj_pos[2], y_start]).reshape(1,3)
             startpoint_pos = startpoint_pos_origin.copy()
             startpoint_pos = startpoint_pos.reshape(-1)
-            # same x,z as the target obj particle pos
+            # similar x,z as the target obj particle pos
             #slope = (obj_pos[1] - startpoint_pos[1]) / (obj_pos[0] - startpoint_pos[0])
             vertical = (obj_pos[1] - startpoint_pos[2])
             # if obj_pos[0] < startpoint_pos[0]:
@@ -590,11 +597,10 @@ class FlexEnv(gym.Env):
             # else:
             #     x_end = obj_pos[0] + 1.0 #rand_float(1.5, 2.0)
             #y_end = slope * (x_end - startpoint_pos[0]) + startpoint_pos[1]
-            y_end = obj_pos[1] - 1.0 # go a bit beyond the point to poke it
-            endpoint_pos = np.array([startpoint_pos[0], startpoint_pos[1], y_end]) #np.array([x_end, y_end])
+            y_end = obj_pos[1] # go a bit beyond the point to poke it
+            endpoint_pos = np.array([obj_pos[0], startpoint_pos[1], y_end]) #np.array([x_end, y_end])
             #and np.abs(x_end) < 1.5 and np.abs(y_end) < 1.5
-            if obj_pos[0] == startpoint_pos[0] and obj_pos[2] == startpoint_pos[1] \
-                and obj_pos[1] != startpoint_pos[2] and vertical < 0 \
+            if obj_pos[1] != startpoint_pos[2] and vertical < 0 \
                 and np.min(cdist(startpoint_pos_origin, pos_xyz)) > 0.2:
                 # Need to ensure vertical difference is negative for top down poke
                 print(f"sampled valid action in top down poking...")

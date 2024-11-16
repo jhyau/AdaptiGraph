@@ -206,7 +206,7 @@ def softbody_scene():
 
     # softbody trans position
     #trans = [0., 0.5, 2.0] # [x, y, z]
-    trans = [rand_float(0., 2.0), rand_float(0., 2.0), rand_float(0., 2.0)]
+    trans = [rand_float(0., 2.0), 0.5, rand_float(0., 2.0)]
     print(f"softbody trans: {trans}")
         
     # softbody scale
@@ -267,10 +267,10 @@ def softbody_scene():
     collisionDistance = radius * 0.5
 
     # ratio of particles (from bottom up) to keep fixed
-    num_fixed_particles = 0
+    num_fixed_particles = 10
 
     # coordinate to determine which particles are fixed (x,y, or z)
-    fixed_coord = 0
+    fixed_coord = 1
 
     # params
     scene_params = np.array([*scale, *trans, radius, 
