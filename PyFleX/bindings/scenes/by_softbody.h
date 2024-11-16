@@ -166,9 +166,27 @@ public:
 		int fixed_particles = (int) ptr[28];
 		int fixed_coord = (int) ptr[29];
 
+		// Which object to load: the box (exact cube) or cube_mesh (rectangular)
+		int obj_to_load = (int) ptr[30];
+
 		char box_path[100];
-		// Instance box(make_path(box_path, "/data/box.ply"));
-        Instance box(make_path(box_path, "/data/rigid/cube_mesh.ply"));
+		std::string obj_path;
+		if (obj_to_load == 0) {
+			obj_path = "/data/box.ply";
+		} else if (obj_to_load == 1) {
+			obj_path = "/data/sphere.ply";
+		} else if (obj_to_load == 2) {
+			// Borrowed this mesh from:
+			// https://github.com/fracture91/graphics-hw3/blob/master/meshes/cylinder.ply
+			obj_path = "/data/cylinder.ply";
+		} else {
+			//obj_path = "/data/rigid/cube_mesh.ply";
+			obj_path = "/data/box.ply";
+		}
+		std::cout << "object to be loaded: " << obj_path << std::endl;
+		//Instance box(make_path(box_path, "/data/box.ply"));
+        //Instance box(make_path(box_path, "/data/rigid/cube_mesh.ply"));
+		Instance box(make_path(box_path, obj_path));
 		box.mScale = scale;
 		box.mTranslation = trans;
 		box.mRotation = rotate;

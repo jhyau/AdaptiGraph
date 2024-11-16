@@ -214,7 +214,8 @@ def softbody_scene():
     #print(f"edge_length: {edge_length}")
     #rope_thickness = 3.0
     s_scale = rand_int(10, 50)
-    scale = np.array([rand_float(2.0, 3.0), rand_float(2.0, 3.0), rand_float(2.0, 3.0)]) * s_scale #* 50
+    # allow greater variance for height
+    scale = np.array([rand_float(2.0, 3.0), rand_float(1.0, 5.0), rand_float(2.0, 3.0)]) * s_scale #* 50
     print(f"softbody scale: {scale} with s_scale: {s_scale}")
     
     # softbody stiffness
@@ -229,19 +230,6 @@ def softbody_scene():
     
     # softbody frtction
     dynamicFriction = 0.1
-        
-    # softbody rotation
-    #x_rotation = 45.
-    z_rotation = rand_float(10, 20)
-    y_rotation = 90. 
-    rot_1 = Rotation.from_euler('xyz', [0, y_rotation, 0.], degrees=True)
-    rotate_1 = rot_1.as_quat()
-    rot_2 = Rotation.from_euler('xyz', [0, 0, z_rotation], degrees=True)
-    rotate_2 = rot_2.as_quat()
-    #first_rotate = quaternion_multuply(rotate_1, rotate_2)
-    #rot_3 = Rotation.from_euler('xyz', [x_rotation, 0, 0], degrees=True)
-    #rotate_3 = rot_3.as_quat()
-    rotate = quaternion_multuply(rotate_1, rotate_2)
     
     # others (usually fixed)
     cluster_radius = 0.
@@ -272,6 +260,41 @@ def softbody_scene():
     # coordinate to determine which particles are fixed (x,y, or z)
     fixed_coord = 1
 
+    # Load box (actual cube) [0 or 3] or sphere [1] or cylinder[2]
+    # ignore cube mesh (rectangular) for now
+    obj_type = rand_int(0, 4)
+
+    # if cylinder, don't rotate in y direction
+    if obj_type == 2:
+        # no rotation for cylinder
+        #x_rotation = 45.
+        z_rotation = 90. #rand_float(10, 20)
+        x_rotation = 90. 
+        y_rotation = 90.
+        rot_1 = Rotation.from_euler('xyz', [x_rotation, 0, 0], degrees=True)
+        rotate = rot_1.as_quat()
+        # rot_2 = Rotation.from_euler('xyz', [0, 0, z_rotation], degrees=True)
+        # rotate_2 = rot_2.as_quat()
+        # rotate = quaternion_multuply(rotate_1, rotate_2)
+        # rot_3 = Rotation.from_euler('xyz', [0, y_rotation, 0.], degrees=True)
+        # rotate_3 = rot_3.as_quat()
+        # rotate = quaternion_multuply(rotate, rotate_3)
+        #rotate = [0., 0., 0., 1.]
+    else:
+        # softbody rotation
+        #x_rotation = 45.
+        z_rotation = rand_float(10, 20)
+        y_rotation = 90. 
+        rot_1 = Rotation.from_euler('xyz', [0, y_rotation, 0.], degrees=True)
+        rotate_1 = rot_1.as_quat()
+        rot_2 = Rotation.from_euler('xyz', [0, 0, z_rotation], degrees=True)
+        rotate_2 = rot_2.as_quat()
+        #first_rotate = quaternion_multuply(rotate_1, rotate_2)
+        #rot_3 = Rotation.from_euler('xyz', [x_rotation, 0, 0], degrees=True)
+        #rotate_3 = rot_3.as_quat()
+        rotate = quaternion_multuply(rotate_1, rotate_2)
+    
+
     # params
     scene_params = np.array([*scale, *trans, radius, 
                             cluster_spacing, cluster_radius, cluster_stiffness,
@@ -279,7 +302,7 @@ def softbody_scene():
                             surface_sampling, volume_sampling, skinning_falloff, skinning_max_dist,
                             cluster_plastic_threshold, cluster_plastic_creep,
                             dynamicFriction, particleFriction, draw_mesh, relaxtion_factor, 
-                            *rotate, collisionDistance, num_fixed_particles, fixed_coord])
+                            *rotate, collisionDistance, num_fixed_particles, fixed_coord, obj_type])
     
     property_params = {'particle_radius': radius,
                     'cluster_radius': cluster_radius,

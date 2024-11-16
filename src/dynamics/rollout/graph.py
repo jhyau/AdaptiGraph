@@ -57,7 +57,7 @@ def visualize_graph(imgs, cam_info,
         colormap=None, point_size=4, edge_size=1, line_size=2, line_alpha=0.5, t_line=5,
         gt_lineset=None, pred_lineset=None, 
         pred_kp_proj_last=None, gt_kp_proj_last=None, part_2_obj_inst=None,
-        physics_param=None, hetero=False):
+        part_inv_weight_0=None, physics_param=None, hetero=False):
     
     if colormap is None:
         colormap = rgb_colormap(repeat=100)
@@ -165,6 +165,16 @@ def visualize_graph(imgs, cam_info,
             # print(f"visualizing obj particles, instance num: {instance_num}, color: {col}")
             cv2.circle(img, (int(obj_kp_proj[k, 0]), int(obj_kp_proj[k, 1])), point_size,
                 col , -1)
+        elif part_inv_weight_0 is not None:
+            # Set fixed particles to black
+            fixed_part = part_inv_weight_0.squeeze()[k]
+            if fixed_part:
+                col = (0, 0, 0)
+                cv2.circle(img, (int(obj_kp_proj[k, 0]), int(obj_kp_proj[k, 1])), point_size,
+                    col , -1)
+            else:
+                cv2.circle(img, (int(obj_kp_proj[k, 0]), int(obj_kp_proj[k, 1])), point_size,    
+                    (int(colormap[k, 2]), int(colormap[k, 1]), int(colormap[k, 0])), -1)
         else:
             # print(f"homogeneous color for all obj particles")
             cv2.circle(img, (int(obj_kp_proj[k, 0]), int(obj_kp_proj[k, 1])), point_size,    
@@ -241,6 +251,16 @@ def visualize_graph(imgs, cam_info,
             # print(f"visualizing gt particles, instance num: {instance_num}, color: {col}")
             cv2.circle(img, (int(gt_kp_proj[k, 0]), int(gt_kp_proj[k, 1])), point_size, 
                 col, -1)
+        elif part_inv_weight_0 is not None:
+            # Set fixed particles to black
+            fixed_part = part_inv_weight_0.squeeze()[k]
+            if fixed_part:
+                col = (0, 0, 0)
+                cv2.circle(img, (int(gt_kp_proj[k, 0]), int(gt_kp_proj[k, 1])), point_size,
+                    col , -1)
+            else:
+                cv2.circle(img, (int(gt_kp_proj[k, 0]), int(gt_kp_proj[k, 1])), point_size, 
+                    (int(colormap[k, 2]), int(colormap[k, 1]), int(colormap[k, 0])), -1)
         else:
             cv2.circle(img, (int(gt_kp_proj[k, 0]), int(gt_kp_proj[k, 1])), point_size, 
                 (int(colormap[k, 2]), int(colormap[k, 1]), int(colormap[k, 0])), -1)

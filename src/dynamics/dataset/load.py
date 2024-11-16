@@ -115,3 +115,18 @@ def load_part_2_instance(dataset_config):
     with open(p2o_path, "rb") as f:
         p2o = pickle.load(f)
     return p2o['part_2_obj_inst']
+
+def load_part_inv_weight_is_0(dataset_config):
+    data_name = dataset_config['data_name']
+    if "data_folder" in dataset_config.keys():
+        data_folder = dataset_config['data_folder']
+    else:
+        data_folder = data_name
+    prep_dir = os.path.join(dataset_config['prep_data_dir'], data_folder)
+    print(f"loading in particle inverse weight is 0 mask in load.py, data_dir: {prep_dir}")
+    inv_weight_path = os.path.join(prep_dir, "particle_inv_weight_is_0.pkl")
+    if not os.path.exists(inv_weight_path):
+        return None
+    with open(inv_weight_path, "rb") as f:
+        inv = pickle.load(f)
+    return inv['particle_inv_weight_is_0']

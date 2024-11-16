@@ -67,6 +67,7 @@ class FlexEnv(gym.Env):
         self.particle_pos_list = []
         self.eef_states_list = []
         self.particle_2_obj_inst_list = []
+        self.particle_inv_weight_0 = []
         
         self.fps = self.dataset_config['fps']
         self.fps_number = self.dataset_config['fps_number']
@@ -198,6 +199,10 @@ class FlexEnv(gym.Env):
                 # save particle pos
                 particles = self.get_positions().reshape(-1, 4)
                 particles_pos = particles[:, :3]
+                # Boolean mask of which particles are fixed (inv weight is 0)
+                # TODO: make this a sparser representation by just storing indices of fixed particles
+                particles_inv_weights = particles[:, 3]
+                particles_inv_weights = (particles_inv_weights == 0.0)
                 # Mapping of particle to object instance
                 part_2_obj = self.get_part_2_instance()
                 # print(f"particle positions shape: {particles.shape}")
@@ -209,8 +214,10 @@ class FlexEnv(gym.Env):
                         _, self.sampled_idx = fps_with_idx(particles_pos, self.fps_number)
                     particles_pos = particles_pos[self.sampled_idx]
                     part_2_obj = part_2_obj[self.sampled_idx]
+                    particles_inv_weights = particles_inv_weights[self.sampled_idx]
                 self.particle_pos_list.append(particles_pos)
                 self.particle_2_obj_inst_list.append(part_2_obj)
+                self.particle_inv_weight_0.append(particles_inv_weights)
                 # save eef pos
                 robot_shape_states = pyflex.getRobotShapeStates(self.flex_robot_helper)
                 if self.gripper:
@@ -294,7 +301,7 @@ class FlexEnv(gym.Env):
             self.store_data(store_cam_param=True, init_fps=True)
         
         # output
-        out_data = self.imgs_list, self.particle_pos_list, self.eef_states_list, self.particle_2_obj_inst_list
+        out_data = self.imgs_list, self.particle_pos_list, self.eef_states_list, self.particle_2_obj_inst_list, self.particle_inv_weight_0
         
         return out_data
         
@@ -304,12 +311,12 @@ class FlexEnv(gym.Env):
         for top down poking action: [start_x, start_z, start_y, end_x, end_z, end_y]
         """
         self.count = 0
-        self.imgs_list, self.particle_pos_list, self.eef_states_list, self.particle_2_obj_inst_list = data
+        self.imgs_list, self.particle_pos_list, self.eef_states_list, self.particle_2_obj_inst_list, self.particle_inv_weight_0 = data
         
         # set up action
         h = 0.5 + self.stick_len
-        print("action shape: ", action.shape)
-        print(f"stick len: {self.stick_len}, h: {h}")
+        # print("action shape: ", action.shape)
+        # print(f"stick len: {self.stick_len}, h: {h}")
         if (action.shape[0] == 4):
             s_2d = np.concatenate([action[:2], [h]])
             e_2d = np.concatenate([action[2:], [h]])
@@ -335,10 +342,10 @@ class FlexEnv(gym.Env):
                 way_points = [s_2d + [0., 0., 0.2], s_2d, e_2d, e_2d + [0., 0., 0.2]]
             else:
                 # need stay at the target for a while
-                print(f"using new poke waypoints")
-                increment = (e_2d[2] - s_2d[2]) / 2
-                print(f"using new poke waypoints, increment: {increment}")
-                way_points = [s_2d, s_2d + [0., 0., increment], e_2d, e_2d]
+                y_increment = (e_2d[2] - s_2d[2]) / 2
+                x_increment = (e_2d[0] - s_2d[0]) / 2
+                print(f"using new poke waypoints, increment: {y_increment}")
+                way_points = [s_2d, s_2d + [0., 0., y_increment], e_2d, e_2d]
         self.reset_robot(self.rest_joints)
         print(way_points)
 
@@ -428,6 +435,7 @@ class FlexEnv(gym.Env):
                 if self.poke:
                     obj_pos = self.get_positions().reshape(-1, 4)[:, [0, 1, 2]]
                     obj_pos[:, 2] *= -1
+                    # to properly compare with obj_pos, need to reorder the end_effector_pos
                     robot_obj_dist = np.min(cdist(end_effector_pos[:3].reshape(1, 3), obj_pos))
                 else:
                     obj_pos = self.get_positions().reshape(-1, 4)[:, [0, 2]]
@@ -465,7 +473,7 @@ class FlexEnv(gym.Env):
             self.store_data()
         
         obs = self.render()
-        out_data = self.imgs_list, self.particle_pos_list, self.eef_states_list, self.particle_2_obj_inst_list
+        out_data = self.imgs_list, self.particle_pos_list, self.eef_states_list, self.particle_2_obj_inst_list, self.particle_inv_weight_0
         
         return obs, out_data
     
@@ -551,7 +559,7 @@ class FlexEnv(gym.Env):
     def sample_top_down_deform_actions(self):
         ## Have robot poke at the object from top down
         ## Returns a 6-dim vector [x_start, z_start, y_start, x_end, z_end, y_end]
-        # Choose an x,z coordinate, change the y coordinate
+        # Choose an x,z coordinate (need to slightly change x or z coordinate between start/end), change the y coordinate
         positions = self.get_positions().reshape(-1, 4)
         positions[:, 2] *= -1 # align with the coordinates
         num_points = positions.shape[0]
@@ -563,15 +571,17 @@ class FlexEnv(gym.Env):
         center_x, center_y, center_z = np.median(pos_x), np.median(pos_y), np.median(pos_z)
         chosen_points = []
         for idx, (x, y, z) in enumerate(zip(pos_x, pos_y, pos_z)):
-            # only choose obj particles that are lower half of y position: and y <= center_y
-            if np.sqrt((x-center_x)**2 + (y-center_y)**2 + (z-center_z)**2) < 2.0:
+            # only choose obj particles that are upper 3rd quadrant of y_coordinates
+            # choose obj particles that are above the table
+            if np.sqrt((x-center_x)**2 + (y-center_y)**2 + (z-center_z)**2) < 2.0 and y >= self.wkspace_height \
+                and y >= (center_y/2):
                 chosen_points.append(idx)
         print(f'chosen points {len(chosen_points)} out of {num_points}.')
         if len(chosen_points) == 0:
             print('no chosen points')
             chosen_points = np.arange(num_points)
         
-        # random choose a start point for x,z within the object bounds
+        # random choose a start point for x,z within the object bounds (and slightly disturb x by 1.0)
         # y needs to be above the object
         # print(f"action dim for top down poking: {self.action_dim}")
         # print(f"action space for top down poking: {self.action_space}")
@@ -583,8 +593,14 @@ class FlexEnv(gym.Env):
 
             # startpoint_pos = [x_start, z_start, y_start]
             #startpoint_pos_origin = np.random.uniform(-self.action_space, self.action_space, size=(1, 3))
-            y_start = np.random.uniform(np.max(pos_y) + 1.0, np.max(pos_y) + 4.0)
-            startpoint_pos_origin = np.array([obj_pos[0]-1.0, obj_pos[2], y_start]).reshape(1,3)
+            #y_start = np.random.uniform(np.max(pos_y) + 2.0, np.max(pos_y) + 5.0)
+            x_disturb = np.random.uniform(-1.0, 1.0)
+            if (np.abs(x_disturb) > 0.5):
+                # larger x disturb --> higher y start
+                y_start = np.random.uniform(np.max(pos_y) + 3.0, np.max(pos_y) + 6.0)
+            else:
+                y_start = np.random.uniform(np.max(pos_y) + 2.0, np.max(pos_y) + 5.0)
+            startpoint_pos_origin = np.array([obj_pos[0]+x_disturb, obj_pos[2], y_start]).reshape(1,3)
             startpoint_pos = startpoint_pos_origin.copy()
             startpoint_pos = startpoint_pos.reshape(-1)
             # similar x,z as the target obj particle pos

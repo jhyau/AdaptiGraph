@@ -2,11 +2,11 @@ dataset:
   #folder: "../sim_data" # folder to save data
   folder: "/media/motion/Elements/adaptigraph/sim_data"
   obj: "softbody"
-  save_dir: "pre-training-fixed-y-s-m-e-e-waypoints-softbody"
+  save_dir: "mixed-objs-fixed-y-s-m-e-e-waypoints-softbody"
 
   # data collection
   base: 0
-  n_episode: 2
+  n_episode: 5
   n_timestep: 5
   n_worker: 2
   

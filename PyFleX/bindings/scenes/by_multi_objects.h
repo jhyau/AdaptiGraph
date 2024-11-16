@@ -266,9 +266,10 @@ class by_MultiObjects: public Scene
 
             // fix any particles below the ground plane in place
             for (int i = 0; i < int(g_buffers->positions.size()); ++i)
-                if (g_buffers->positions[i].y < 0.4f)
+                if (g_buffers->positions[i].y < 0.4f) {
                     g_buffers->positions[i].w = 0.0f;
                     std::cout << "below ground fixed particle" << std::endl;
+                }
 
             // expand radius for better self collision
             g_params.radius *= 1.5f;

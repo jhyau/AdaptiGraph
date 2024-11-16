@@ -7,11 +7,13 @@ def store_data(filename, data, action):
     imgs_list: (T, num_cameras, H, W, 5)
     particle_pos_list: (T, N, 3)
     eef_states_list: (T, 14)
+    particle_inv_weight_is_0: (T, N, 1)
+    part_2_obj_inst: (T, N, 1)
     """
     # load data
-    imgs_list, particle_pos_list, eef_states_list, part_2_obj_inst_list = data
-    imgs_list_np, particle_pos_list_np, eef_states_list_np, part_2_obj_inst_list_np = \
-        np.array(imgs_list), np.array(particle_pos_list), np.array(eef_states_list), np.array(part_2_obj_inst_list)
+    imgs_list, particle_pos_list, eef_states_list, part_2_obj_inst_list, particle_inv_weight_0 = data
+    imgs_list_np, particle_pos_list_np, eef_states_list_np, part_2_obj_inst_list_np, particle_inv_weight_0 = \
+        np.array(imgs_list), np.array(particle_pos_list), np.array(eef_states_list), np.array(part_2_obj_inst_list), np.array(particle_inv_weight_0)
     
     # stat
     T, n_cam = imgs_list_np.shape[:2]
@@ -19,6 +21,7 @@ def store_data(filename, data, action):
 
     print(f"shape of particle positions: {part_2_obj_inst_list_np.shape}")
     print(f"shape of part2obj instances map: {part_2_obj_inst_list_np.shape}")
+    print(f"shape of particle inv weight is 0: {particle_inv_weight_0.shape}")
     
     # process images
     color_imgs, depth_imgs = process_imgs(imgs_list_np)
@@ -33,7 +36,8 @@ def store_data(filename, data, action):
         'action': action,
         'positions': particle_pos_list_np,
         'eef_states': eef_states_list_np,
-        'observations': {'color': color_imgs, 'depth': depth_imgs}
+        'observations': {'color': color_imgs, 'depth': depth_imgs},
+        'particle_inv_weight_is_0': particle_inv_weight_0
         # 'part_2_obj_inst': part_2_obj_inst_list_np
     }
     

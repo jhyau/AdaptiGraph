@@ -70,7 +70,7 @@ def gen_data(info):
     stuck = False
     for idx_timestep in range(n_timestep):
         color_diff = 0
-        data = [], [], [], [] # reinitialize data for each timestep
+        data = [], [], [], [], [] # reinitialize data for each timestep
         for k in range(10):
             u = None
             
@@ -121,7 +121,7 @@ def gen_data(info):
             # check valid/invalid action to make difference large enough
             color_diff = np.mean(np.abs(img[:, :, :3] - last_img[:, :, :3]))
             if color_diff < color_threshold:
-                data = [], [], [], []
+                data = [], [], [], [], []
                 if k == 9:
                     stuck = True
                     print('The process is stucked on episode %d timestep %d!!!!' % (idx_episode, idx_timestep))

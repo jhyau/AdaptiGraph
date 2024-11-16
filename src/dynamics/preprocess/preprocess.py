@@ -178,6 +178,7 @@ def preprocess(config):
     all_obj_pos = [] # (n_epis, N_obj, 3)
     phys_params = [] # (n_epis, N_phy, 1)
     all_part_2_obj_instance = [] # (n_epis, N_obj, 1)
+    all_part_inv_weight_is_0 = [] # (n_epis, N_obj, 1)
     for epi_idx, epi in enumerate(epi_list):
         epi_time_start = time.time()
         
@@ -191,7 +192,7 @@ def preprocess(config):
         # preprocess step info
         num_steps = len(list(glob.glob(os.path.join(epi_dir, '*.h5')))) - 1
         
-        eef_steps, obj_steps, part_2_obj_steps = [], [], []
+        eef_steps, obj_steps, part_2_obj_steps, part_inv_weight_0_steps = [], [], [], []
         n_frames = 0
         for step_idx in range(1, num_steps+1):
             # extract data
@@ -206,6 +207,11 @@ def preprocess(config):
                 # particle to object instance mapping
                 part_2_obj_steps.append(part_2_obj_inst)
             
+            if "particle_inv_weight_is_0" in data.keys():
+                # boolean mask that's true when a particle's inverse weight is 0 (fixed in place)
+                part_in_weight_0 = data['particle_inv_weight_is_0']
+                part_inv_weight_0_steps.append(part_in_weight_0)
+
             # preprocess eef and push
             out_eef = process_eef(eef_states, eef_dataset) # (T, N_eef, 3)
             frame_idxs, cnt = extract_push(out_eef, dist_thresh, n_his, n_future, n_frames)
@@ -231,6 +237,11 @@ def preprocess(config):
             all_part_2_obj_instance.append(part_2_obj_steps)
             assert eef_steps.shape[0] == obj_steps.shape[0] == n_frames == part_2_obj_steps.shape[0]
         
+        if len(part_inv_weight_0_steps) > 0:
+            part_inv_weight_0_steps = np.concatenate(part_inv_weight_0_steps, axis=0)
+            all_part_inv_weight_is_0.append(part_inv_weight_0_steps)
+            assert eef_steps.shape[0] == obj_steps.shape[0] == n_frames == part_inv_weight_0_steps.shape[0]
+
         epi_time_end = time.time()
         print(f'Episode {epi_idx+1}/{num_epis} has frames {obj_steps.shape[0]} took {epi_time_end - epi_time_start:.2f}s.')
     
@@ -262,6 +273,16 @@ def preprocess(config):
             pickle.dump(p2o_info, f)
         assert len(all_part_2_obj_instance) == num_epis
     
+    # save boolean mask of particles with inverse weight 0
+    if len(all_part_inv_weight_is_0) > 0:
+        inv_weight_path = os.path.join(save_dir, "particle_inv_weight_is_0.pkl")
+        inv_weight_info = {
+            'particle_inv_weight_is_0': all_part_inv_weight_is_0
+        }
+        with open(inv_weight_path, "wb") as f:
+            pickle.dump(inv_weight_info, f)
+        assert len(all_part_inv_weight_is_0) == num_epis
+
     # save metadata
     with open(os.path.join(save_dir, 'metadata.txt'), 'w') as f:
         f.write(f'{dist_thresh},{n_future},{n_his}')
