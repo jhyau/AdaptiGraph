@@ -4,6 +4,7 @@ import numpy as np
 import cv2
 import moviepy.editor as mpy
 import torch
+import time
 
 from dynamics.utils import rgb_colormap, pad, pad_torch
 from dynamics.dataset.graph import fps, construct_edges_from_states
@@ -13,6 +14,7 @@ def moviepy_merge_video(image_path, image_type, out_path, fps=20):
     print(f"moviepy merge image_path: {image_path}")
     # load images
     image_files = sorted([os.path.join(image_path, img) for img in os.listdir(image_path) if img.endswith(f'{image_type}.jpg')])
+    print(f"num image files: {len(image_files)}")
     # create a video clip from the images
     clip = mpy.ImageSequenceClip(image_files, fps=fps)
     # write the video clip to a file
@@ -29,6 +31,7 @@ def extract_imgs(dataset_config, episode_idx, cam=0):
     print(f"extract imgs data_dir: {data_dir}")
     
     ## load images
+    start = time.time()
     imgs = []
     epi_dir = os.path.join(data_dir, f'{episode_idx:06d}')
     step_list = sorted(list(glob.glob(os.path.join(epi_dir, '*.h5'))))[1:]
@@ -37,6 +40,7 @@ def extract_imgs(dataset_config, episode_idx, cam=0):
         color_imgs = data['observations']['color'][f'cam_{cam}'] # (T, H, W, 3)
         imgs.extend(color_imgs)
     imgs = np.array(imgs)
+    print(f"time it took to load images: {time.time() - start}")
     
     ## load camera
     camera_dir = os.path.join(data_dir, 'cameras')
@@ -90,6 +94,7 @@ def visualize_graph(imgs, cam_info,
     
     img_orig = imgs[start]
     img = img_orig.copy()
+    print(f"num images: {img_orig.shape}")
 
     # transform keypoints
     obj_kp_homo = np.concatenate([kp_vis, np.ones((kp_vis.shape[0], 1))], axis=1) # (N, 4)
@@ -149,15 +154,15 @@ def visualize_graph(imgs, cam_info,
                 #(col*color_step, 0, 0), -1)
                 col , -1)
         elif part_2_obj_inst is not None:
-            print("visualizing based on part2obj instance particles by color")
-            print(f"size of part2object: {part_2_obj_inst.shape}")
+            # print("visualizing based on part2obj instance particles by color")
+            # print(f"size of part2object: {part_2_obj_inst.shape}")
             part2color = {}
             part2color[0] = (255, 0, 0)
             part2color[1] = (255, 127, 127)
             part2color[2] = (255, 255, 255)
             instance_num = part_2_obj_inst.squeeze()[k]
             col = part2color[instance_num]
-            print(f"visualizing obj particles, instance num: {instance_num}, color: {col}")
+            # print(f"visualizing obj particles, instance num: {instance_num}, color: {col}")
             cv2.circle(img, (int(obj_kp_proj[k, 0]), int(obj_kp_proj[k, 1])), point_size,
                 col , -1)
         else:
@@ -225,15 +230,15 @@ def visualize_graph(imgs, cam_info,
     print(f"gt key points shape: {gt_kp_proj.shape[0]}")
     for k in range(gt_kp_proj.shape[0]):
         if part_2_obj_inst is not None:
-            print("visualizing gt based on part2obj instance particles by color")
-            print(f"size of part2object: {part_2_obj_inst.shape}")
+            # print("visualizing gt based on part2obj instance particles by color")
+            # print(f"size of part2object: {part_2_obj_inst.shape}")
             part2color = {}
             part2color[0] = (255, 0, 0)
             part2color[1] = (255, 127, 127)
             part2color[2] = (255, 255, 255)
             instance_num = part_2_obj_inst.squeeze()[k]
             col = part2color[instance_num]
-            print(f"visualizing gt particles, instance num: {instance_num}, color: {col}")
+            # print(f"visualizing gt particles, instance num: {instance_num}, color: {col}")
             cv2.circle(img, (int(gt_kp_proj[k, 0]), int(gt_kp_proj[k, 1])), point_size, 
                 col, -1)
         else:
@@ -454,10 +459,10 @@ def construct_graph(dataset_config, material_config, eef_pos, obj_pos,
     # fps_obj_kps takes the fps index points from obj_kp, then rest are padded to be zero. obj_kp_num of actual fps points
     sort_by_pos = np.lexsort((fps_obj_kps[-1,:obj_kp_num,1], fps_obj_kps[-1,:obj_kp_num,0], fps_obj_kps[-1,:obj_kp_num,2]))
     print(f"sorted indices for fps: {sort_by_pos}")
-    print(f"obj_kps only fps: {obj_kps[-1][fps_idx_list]}")
-    print(f"obj_kps only fps sorted: {obj_kps[-1][fps_idx_list][sort_by_pos]}")
-    print(f"fps_obj_kps: {fps_obj_kps[-1]}")
-    print(f"sorted fps_obj_kps: {fps_obj_kps[-1][sort_by_pos]}")
+    # print(f"obj_kps only fps: {obj_kps[-1][fps_idx_list]}")
+    # print(f"obj_kps only fps sorted: {obj_kps[-1][fps_idx_list][sort_by_pos]}")
+    # print(f"fps_obj_kps: {fps_obj_kps[-1]}")
+    # print(f"sorted fps_obj_kps: {fps_obj_kps[-1][sort_by_pos]}")
     # only the first obj_kp_num particles are visualized
     # change physics param only for the fps visualized particles. pad the rest
     # particles are sampled, and the rest are padded to reach the max_nobj (100 for rope for example)
@@ -519,7 +524,7 @@ def construct_graph(dataset_config, material_config, eef_pos, obj_pos,
         graph[material_name + "_physics_param"] = torch.tensor(physics_for_each_obj)
         #graph[material_name + "_physics_param"] = physics_param[material_name] + torch.tensor([physics_param_shift])
 
-    print(f"new _physics_param: {graph[mat+'_physics_param']}, size: {graph[mat+'_physics_param'].size()}")
+    # print(f"new _physics_param: {graph[mat+'_physics_param']}, size: {graph[mat+'_physics_param'].size()}")
     ### finish constructing graph ###
     print("graph keys: ", graph.keys())
     return graph, fps_idx_list, fps2phys
@@ -544,9 +549,14 @@ def get_next_pair_or_break_episode(pairs, n_his, n_frames, current_end):
 
 def get_next_pair_or_break_episode_pushes(pairs, n_his, n_frames, current_end):
     # find next pair
+    print("pairs: ", pairs.shape)
     valid_pairs = pairs[pairs[:, n_his-1] == current_end]
+    print(f"num valid pairs: {len(valid_pairs)}, current_end: {current_end}, n_his: {n_his}")
     # avoid loop
+    print(valid_pairs)
     valid_pairs = valid_pairs[valid_pairs[:, n_his] > current_end]
+    print(f"after valid pairs check: {len(valid_pairs)}")
+    print(valid_pairs)
     if len(valid_pairs) == 0:
         return None
     next_pair = valid_pairs[int(len(valid_pairs)/2)]  # pick the middle one

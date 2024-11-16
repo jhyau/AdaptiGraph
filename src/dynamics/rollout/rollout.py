@@ -59,10 +59,14 @@ def rollout_from_start_graph(graph, fps_idx_list, dataset_config, material_confi
             if name.endswith('_physics_param'):
                 physics_param = graph[name][:obj_kp_num].numpy()
         
+        if part_2_obj_inst is not None:
+            vis_part_2_obj = part_2_obj_inst[0][fps_idx_list]
+        else:
+            vis_part_2_obj = None
         pred_kp_proj_last, gt_kp_proj_last, gt_lineset, pred_lineset = \
             visualize_graph(imgs, cam_info, kp_vis, kp_vis, eef_kp, Rr, Rs,
                             current_start, current_end, 0, save_dir, max_nobj, 
-                            part_2_obj_inst=part_2_obj_inst[0][fps_idx_list], 
+                            part_2_obj_inst=vis_part_2_obj, 
                             physics_param=physics_param, hetero=hetero)
 
     ## prepare graph
@@ -75,6 +79,7 @@ def rollout_from_start_graph(graph, fps_idx_list, dataset_config, material_confi
     
     with torch.no_grad(): # eval
         for i in range(1, 1 + rollout_steps):
+            print(f"rollout index: {i}")
             # prediction
             graph = truncate_graph(graph) # remove the padding
             pred_state, pred_motion = model(**graph)
@@ -92,12 +97,16 @@ def rollout_from_start_graph(graph, fps_idx_list, dataset_config, material_confi
             # fps for visualization
             obj_kp_vis = obj_kp[:obj_kp_num] # (N_fps, 3)
             gt_kp_vis = gt_kp[:obj_kp_num] # (N_fps, 3)
-            part_2_obj_inst_vis = part_2_obj_inst[current_end][fps_idx_list]
+            if part_2_obj_inst is not None:
+                part_2_obj_inst_vis = part_2_obj_inst[current_end][fps_idx_list]
+            else:
+                part_2_obj_inst_vis = None
             print(f"obj_kp_num: {obj_kp_num}, obj_kp shape: {obj_kp.shape}, obj_kp_vis shape: {obj_kp_vis.shape}")
             
             # calculate error
             error = np.linalg.norm(obj_kp - gt_kp, axis=-1).mean()
             error_list.append(error)
+            print(f"error from rollout step {i}: {error}")
             
             # prepare next pair, start, end
             next_pair = get_next_pair_or_break_func(pairs, n_his, n_frames, current_end)

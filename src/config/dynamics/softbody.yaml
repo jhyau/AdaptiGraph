@@ -1,10 +1,12 @@
 dataset_config:
   data_name: "softbody"
-  output_name: "shallow-poke-fixed_10_x_stick_pusher_same_xz_start_softbody_softbody-homo-connect-all-false-keep-fps"
-  data_folder: "shallow-poke-fixed_10_x_stick_pusher_same_xz_start_softbody"
+  output_name: "s-m-e-waypoints-softbody"
+  data_folder: "s-m-e-waypoints-softbody"
   materials: ["softbody"]
-  data_dir: "../sim_data" # data directory
-  prep_data_dir: "../preprocess" # preprocessed data directory
+  #data_dir: "../sim_data" # data directory
+  data_dir: "/media/motion/Elements/adaptigraph/sim_data"
+  #prep_data_dir: "../preprocess" # preprocessed data directory
+  prep_data_dir: "/media/motion/Elements/adaptigraph/preprocess"
   device: "cuda:0"
 
   verbose: False
@@ -14,8 +16,10 @@ dataset_config:
   dist_thresh: 0.1 # 1.0cm
 
   ratio:
-    train: [0, 0.98]
-    valid: [0.98, 1]
+    #train: [0, 0.98]
+    #valid: [0.98, 1]
+    train: [0, 0]
+    valid: [0, 1]
 
   eef:
     max_neef: 1
@@ -88,7 +92,8 @@ model_config:
   rel_density_dim: 0
 
 rollout_config:
-  out_dir: "../rollout"
+  #out_dir: "../rollout"
+  out_dir: "/media/motion/Elements/adaptigraph/rollout"
   rollout_steps: 100
 
 material_config:

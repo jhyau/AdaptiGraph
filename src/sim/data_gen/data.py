@@ -33,8 +33,8 @@ def store_data(filename, data, action):
         'action': action,
         'positions': particle_pos_list_np,
         'eef_states': eef_states_list_np,
-        'observations': {'color': color_imgs, 'depth': depth_imgs},
-        'part_2_obj_inst': part_2_obj_inst_list_np
+        'observations': {'color': color_imgs, 'depth': depth_imgs}
+        # 'part_2_obj_inst': part_2_obj_inst_list_np
     }
     
     # save to h5py

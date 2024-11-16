@@ -74,6 +74,9 @@ class FlexEnv(gym.Env):
         # others
         self.gripper = self.dataset_config['gripper']
         self.stick_len = self.dataset_config['pusher_len']
+
+        # action type
+        self.poke = False
     
     ### shape states
     def robot_to_shape_states(self, robot_states):
@@ -298,7 +301,7 @@ class FlexEnv(gym.Env):
     def step(self, action, save_data=False, data=None):
         """
         action: [start_x, start_z, end_x, end_z]
-        for top down poking action: [start_x, start_y, start_z, end_x, end_y, end_z]
+        for top down poking action: [start_x, start_z, start_y, end_x, end_z, end_y]
         """
         self.count = 0
         self.imgs_list, self.particle_pos_list, self.eef_states_list, self.particle_2_obj_inst_list = data
@@ -311,10 +314,10 @@ class FlexEnv(gym.Env):
             s_2d = np.concatenate([action[:2], [h]])
             e_2d = np.concatenate([action[2:], [h]])
         else:
-            s_2d = action[:3] + np.array([0., 0., h])
-            e_2d = action[3:] + np.array([0., 0., h])
-        print(f"after h start: {s_2d}")
-        print(f"after h end: {e_2d}")
+            s_2d = action[:3] #+ np.array([0., 0., h])
+            e_2d = action[3:] #+ np.array([0., 0., h])
+        #print(f"after h start: {s_2d}")
+        #print(f"after h end: {e_2d}")
         # pusher angle depending on x-axis
         if (s_2d - e_2d)[0] == 0:
             pusher_angle = np.pi/2
@@ -322,13 +325,21 @@ class FlexEnv(gym.Env):
             pusher_angle = np.arctan((s_2d - e_2d)[1] / (s_2d - e_2d)[0])
         # robot orientation
         orn = np.array([0.0, np.pi, pusher_angle + np.pi/2])
+        print(f"pusher_angle: {pusher_angle}")
 
         # create way points
         if self.gripper:
             way_points = [s_2d + [0., 0., 0.5], s_2d, s_2d, e_2d + [0., 0., 0.5], e_2d]
         else:
-            way_points = [s_2d + [0., 0., 0.2], s_2d, e_2d, e_2d + [0., 0., 0.2]]
+            if not self.poke:
+                way_points = [s_2d + [0., 0., 0.2], s_2d, e_2d, e_2d + [0., 0., 0.2]]
+            else:
+                # need stay at the target for a while
+                print(f"using new poke waypoints")
+                increment = (e_2d[2] - s_2d[2]) / 2
+                way_points = [s_2d, s_2d + [0., 0., increment], e_2d]
         self.reset_robot(self.rest_joints)
+        print(way_points)
 
         # set robot speed
         speed = 1.0/self.robot_speed_inv
@@ -338,6 +349,7 @@ class FlexEnv(gym.Env):
             s = way_points[i_p]
             e = way_points[i_p+1]
             steps = int(np.linalg.norm(e-s)/speed) + 1
+            print(f"at waypoint: {i_p}, has {steps} steps")
             
             for i in range(steps):
                 end_effector_pos = s + (e-s) * i / steps # expected eef position
@@ -470,6 +482,7 @@ class FlexEnv(gym.Env):
         elif self.obj in ['softbody']:
             # This movement is in the y-coordinate, x and z should be fixed for each action
             print("^^^^^^^^sampling top down poke action^^^^^^^^^")
+            self.poke = True
             action = self.sample_top_down_deform_actions()
             return action
         elif self.obj in ['multiobj']:
@@ -543,8 +556,8 @@ class FlexEnv(gym.Env):
         center_x, center_y, center_z = np.median(pos_x), np.median(pos_y), np.median(pos_z)
         chosen_points = []
         for idx, (x, y, z) in enumerate(zip(pos_x, pos_y, pos_z)):
-            # only choose obj particles that are upper half of y position
-            if np.sqrt((x-center_x)**2 + (y-center_y)**2 + (z-center_z)**2) < 2.0 and y >= center_y:
+            # only choose obj particles that are upper half of y position and: y >= center_y
+            if np.sqrt((x-center_x)**2 + (y-center_y)**2 + (z-center_z)**2) < 2.0:
                 chosen_points.append(idx)
         print(f'chosen points {len(chosen_points)} out of {num_points}.')
         if len(chosen_points) == 0:
@@ -563,7 +576,8 @@ class FlexEnv(gym.Env):
 
             # startpoint_pos = [x_start, z_start, y_start]
             #startpoint_pos_origin = np.random.uniform(-self.action_space, self.action_space, size=(1, 3))
-            startpoint_pos_origin = np.array([obj_pos[0], obj_pos[2], np.random.uniform(-4, 4)]).reshape(1,3)
+            y_start = np.random.uniform(obj_pos[1] + 1.0, obj_pos[1] + self.action_dim)
+            startpoint_pos_origin = np.array([obj_pos[0], obj_pos[2], y_start]).reshape(1,3)
             startpoint_pos = startpoint_pos_origin.copy()
             startpoint_pos = startpoint_pos.reshape(-1)
             # same x,z as the target obj particle pos
@@ -576,7 +590,7 @@ class FlexEnv(gym.Env):
             # else:
             #     x_end = obj_pos[0] + 1.0 #rand_float(1.5, 2.0)
             #y_end = slope * (x_end - startpoint_pos[0]) + startpoint_pos[1]
-            y_end = vertical
+            y_end = obj_pos[1] - 1.0 # go a bit beyond the point to poke it
             endpoint_pos = np.array([startpoint_pos[0], startpoint_pos[1], y_end]) #np.array([x_end, y_end])
             #and np.abs(x_end) < 1.5 and np.abs(y_end) < 1.5
             if obj_pos[0] == startpoint_pos[0] and obj_pos[2] == startpoint_pos[1] \

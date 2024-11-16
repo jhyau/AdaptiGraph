@@ -113,6 +113,10 @@ def gen_data(info):
     
             # step
             img, data = env.step(u, save_data, data)
+
+            # if action_type is not None and action_type == "poke":
+            #     # no need to do difference check
+            #     break
             
             # check valid/invalid action to make difference large enough
             color_diff = np.mean(np.abs(img[:, :, :3] - last_img[:, :, :3]))
@@ -166,6 +170,10 @@ if __name__ == "__main__":
 
     action_dim = dataset_config['action_dim']
     cam_view = dataset_config['camera_view']
+    if "action_type" in dataset_config.keys():
+        action_type = dataset_config["action_type"]
+    else:
+        action_type = None
 
     if args.debug:
         info = {

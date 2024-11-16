@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.spatial.transform import Rotation
-from sim.utils import rand_float, quaternion_multuply
+from sim.utils import rand_float, quaternion_multuply, rand_int
 
 """
 Support Scenes:
@@ -205,17 +205,21 @@ def softbody_scene():
     radius = 0.03
 
     # softbody trans position
-    trans = [0., 0.5, 2.0] # [x, y, z]
+    #trans = [0., 0.5, 2.0] # [x, y, z]
+    trans = [rand_float(0., 2.0), rand_float(0., 2.0), rand_float(0., 2.0)]
+    print(f"softbody trans: {trans}")
         
     # softbody scale
-    edge_length = rand_float(2.5, 3.0)
-    print(f"edge_length: {edge_length}")
+    #edge_length = rand_float(1.0, 3.0)
+    #print(f"edge_length: {edge_length}")
     #rope_thickness = 3.0
-    scale = np.array([edge_length, edge_length, edge_length]) * 30 #* 50
+    s_scale = rand_int(10, 50)
+    scale = np.array([rand_float(2.0, 3.0), rand_float(2.0, 3.0), rand_float(2.0, 3.0)]) * s_scale #* 50
+    print(f"softbody scale: {scale} with s_scale: {s_scale}")
     
     # softbody stiffness
     stiffness = np.random.rand()
-    print(f"softbody stiffness for uniform: {stiffness}")
+    print(f"softbody stiffness for uniform/homogeneous: {stiffness}")
     if stiffness < 0.5:
         global_stiffness = stiffness * 1e-4 / 0.5
         cluster_spacing = 2 + 8 * stiffness
@@ -263,7 +267,7 @@ def softbody_scene():
     collisionDistance = radius * 0.5
 
     # ratio of particles (from bottom up) to keep fixed
-    num_fixed_particles = 10
+    num_fixed_particles = 0
 
     # coordinate to determine which particles are fixed (x,y, or z)
     fixed_coord = 0

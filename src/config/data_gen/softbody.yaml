@@ -1,7 +1,8 @@
 dataset:
-  folder: "../sim_data" # folder to save data
+  #folder: "../sim_data" # folder to save data
+  folder: "/media/motion/Elements/adaptigraph/sim_data"
   obj: "softbody"
-  save_dir: "slower-poke-fixed_10_x_stick_pusher_same_xz_start_softbody"
+  save_dir: "higher-s-d-waypoints-speed-100-poke-stick_pusher_same_xz_start_softbody"
 
   # data collection
   base: 0
@@ -18,12 +19,13 @@ dataset:
   robot_type: 'xarm6' 
   robot_end_idx: 6
   robot_num_dofs: 6
-  robot_speed_inv: 300
+  robot_speed_inv: 100 #300
   #robot_num_dofs: 12
   #robot_speed_inv: 100
   
   action_dim: 6 # now needs to include y_start, y_end. Prev: 4 [x_start, z_start, x_end, z_end]
   action_space: 6 # 4 random action space scope
+  action_type: "poke"
 
   # Tool
   gripper: False

@@ -200,7 +200,11 @@ def preprocess(config):
             
             eef_states = data['eef_states'] # (T, N_eef, 14)
             positions = data['positions'] # (T, N_obj, 3)
-            part_2_obj_inst = data['part_2_obj_inst'] # (T, N_obj, 1)
+            if "part_2_obj_inst" in data.keys():
+                part_2_obj_inst = data['part_2_obj_inst'] # (T, N_obj, 1)
+                
+                # particle to object instance mapping
+                part_2_obj_steps.append(part_2_obj_inst)
             
             # preprocess eef and push
             out_eef = process_eef(eef_states, eef_dataset) # (T, N_eef, 3)
@@ -211,9 +215,6 @@ def preprocess(config):
             # eef and object positions
             eef_steps.append(out_eef)
             obj_steps.append(positions)
-
-            # particle to object instance mapping
-            part_2_obj_steps.append(part_2_obj_inst)
             
             # save frame idxs
             np.savetxt(os.path.join(push_save_dir, f'{epi}_{(step_idx):02}.txt'), frame_idxs, fmt='%d')
@@ -221,11 +222,14 @@ def preprocess(config):
         
         eef_steps = np.concatenate(eef_steps, axis=0)
         obj_steps = np.concatenate(obj_steps, axis=0)
-        part_2_obj_steps = np.concatenate(part_2_obj_steps, axis=0)
+        
         all_eef_pos.append(eef_steps)
         all_obj_pos.append(obj_steps)
-        all_part_2_obj_instance.append(part_2_obj_steps)
-        assert eef_steps.shape[0] == obj_steps.shape[0] == n_frames == part_2_obj_steps.shape[0]
+        assert eef_steps.shape[0] == obj_steps.shape[0] == n_frames
+        if len(part_2_obj_steps) > 0:
+            part_2_obj_steps = np.concatenate(part_2_obj_steps, axis=0)
+            all_part_2_obj_instance.append(part_2_obj_steps)
+            assert eef_steps.shape[0] == obj_steps.shape[0] == n_frames == part_2_obj_steps.shape[0]
         
         epi_time_end = time.time()
         print(f'Episode {epi_idx+1}/{num_epis} has frames {obj_steps.shape[0]} took {epi_time_end - epi_time_start:.2f}s.')
@@ -249,13 +253,14 @@ def preprocess(config):
     assert len(all_eef_pos) == len(all_obj_pos) == num_epis
 
     # save particle to object instance mapping
-    p2o_path = os.path.join(save_dir, "part_2_obj_inst.pkl")
-    p2o_info = {
-        'part_2_obj_inst': all_part_2_obj_instance
-    }
-    with open(p2o_path, "wb") as f:
-        pickle.dump(p2o_info, f)
-    assert len(all_part_2_obj_instance) == num_epis
+    if len(all_part_2_obj_instance) > 0:
+        p2o_path = os.path.join(save_dir, "part_2_obj_inst.pkl")
+        p2o_info = {
+            'part_2_obj_inst': all_part_2_obj_instance
+        }
+        with open(p2o_path, "wb") as f:
+            pickle.dump(p2o_info, f)
+        assert len(all_part_2_obj_instance) == num_epis
     
     # save metadata
     with open(os.path.join(save_dir, 'metadata.txt'), 'w') as f:
