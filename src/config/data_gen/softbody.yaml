@@ -2,7 +2,7 @@ dataset:
   #folder: "../sim_data" # folder to save data
   folder: "/media/motion/Elements/adaptigraph/sim_data"
   obj: "softbody"
-  save_dir: "10-epi-particles-only-box-mix-y-s-m-e-e-m-s-waypoints-softbody"
+  save_dir: "softer-stiff-0-1-particles-only-box-mix-y-s-m-e-e-m-s-waypoints-softbody"
 
   # data collection
   base: 0

@@ -1,7 +1,7 @@
 dataset_config:
   data_name: "softbody"
-  output_name: "10-epi-particles-only-box-mix-y-s-m-e-e-m-s-waypoints-softbody"
-  data_folder: "10-epi-particles-only-box-mix-y-s-m-e-e-m-s-waypoints-softbody"
+  output_name: "softer-stiff-0-1-particles-only-box-mix-y-s-m-e-e-m-s-waypoints-softbody"
+  data_folder: "softer-stiff-0-1-particles-only-box-mix-y-s-m-e-e-m-s-waypoints-softbody"
   materials: ["softbody"]
   #data_dir: "../sim_data" # data directory
   data_dir: "/media/motion/Elements/adaptigraph/sim_data"

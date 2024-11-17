@@ -223,7 +223,8 @@ def softbody_scene():
     print(f"softbody scale: {scale} with s_scale: {s_scale}")
     
     # softbody stiffness
-    stiffness = np.random.rand()
+    #stiffness = np.random.rand()
+    stiffness = 0.1
     print(f"softbody stiffness for uniform/homogeneous: {stiffness}")
     if stiffness < 0.5:
         global_stiffness = stiffness * 1e-4 / 0.5

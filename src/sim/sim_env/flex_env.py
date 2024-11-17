@@ -572,14 +572,23 @@ class FlexEnv(gym.Env):
         center_x, center_y, center_z = np.median(pos_x), np.median(pos_y), np.median(pos_z)
         max_y = np.max(pos_y)
         chosen_points = []
+        is_surface_poke = (np.random.uniform(0.0, 1.0) <= 0.5)
+        print(f"choosing a surface-level particle: {is_surface_poke}")
         for idx, (x, y, z) in enumerate(zip(pos_x, pos_y, pos_z)):
             # only choose obj particles that are upper 3rd quadrant of y_coordinates
             # choose obj particles that are above the table
-            # sample surface particles only instead of middle ones (top 10% of y coordinates)
+            # sample surface particles only instead of middle ones (like top 5% of y coordinates) y >= (max_y * 0.95)
+            # sample both surface and some penetration points, upper half
             # end effector point is at the top of the stick, not the bottom, so add self.stick_len back
-            if np.sqrt((x-center_x)**2 + (y-center_y)**2 + (z-center_z)**2) < 2.0 and y >= self.wkspace_height \
-                and y >= (max_y * 0.9):
-                chosen_points.append(idx)
+            if np.sqrt((x-center_x)**2 + (y-center_y)**2 + (z-center_z)**2) < 2.0 and y >= self.wkspace_height:
+                # choose surface points only or also include middle points
+                if is_surface_poke:
+                    if y >= (max_y * 0.95):
+                        chosen_points.append(idx)
+                else:
+                    # any point in upper half of the object
+                    if y >= center_y:
+                        chosen_points.append(idx)
         print(f'chosen points {len(chosen_points)} out of {num_points}.')
         if len(chosen_points) == 0:
             print('no chosen points')

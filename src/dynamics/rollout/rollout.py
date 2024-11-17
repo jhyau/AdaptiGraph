@@ -312,6 +312,7 @@ def rollout_dataset(model, device, config, save_dir, viz, keep_prev_fps, hetero)
             # Save the original images and make into movie
             print(f"saving OG images...")
             og_img_path = os.path.join(save_dir, f"og_epi_{episode_idx}")
+            os.makedirs(og_img_path, exist_ok=True)
             pred_out_path = os.path.join(og_img_path, f"epi_{episode_idx}_og.mp4")
             fps = 10
             for i,img in enumerate(imgs):
