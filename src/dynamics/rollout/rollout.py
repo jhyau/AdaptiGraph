@@ -6,6 +6,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import torch
+import cv2
 
 import sys
 sys.path.append('.')
@@ -308,6 +309,13 @@ def rollout_dataset(model, device, config, save_dir, viz, keep_prev_fps, hetero)
             imgs, cam_info = extract_imgs(dataset_config, episode_idx, cam=0)
             print(f"num imgs: {len(imgs)}, num pair lists episode: {len(pair_lists_episode)}")
             assert len(imgs) == len(pair_lists_episode)
+            # Save the original images and make into movie
+            print(f"saving OG images...")
+            pred_out_path = os.path.join(save_dir, f"epi_{episode_idx}_og.mp4")
+            fps = 10
+            for i,img in enumerate(imgs):
+                cv2.imwrite(os.path.join(save_dir, f'epi_{episode_idx}_step_{i}_og.jpg'), img)
+            moviepy_merge_video(save_dir, 'og', pred_out_path, fps)
         else:
             imgs, cam_info = None, None
         

@@ -321,10 +321,11 @@ class FlexEnv(gym.Env):
             s_2d = np.concatenate([action[:2], [h]])
             e_2d = np.concatenate([action[2:], [h]])
         else:
-            s_2d = action[:3] #+ np.array([0., 0., h])
-            e_2d = action[3:] #+ np.array([0., 0., h])
-        #print(f"after h start: {s_2d}")
-        #print(f"after h end: {e_2d}")
+            # The actual end effector point is at the top of the stick pusher, not the bottom of the stick
+            print(f"og s_2d: {action[:3]}, og e_2d: {action[3:]}")
+            s_2d = action[:3] + np.array([0., 0., self.stick_len])
+            e_2d = action[3:] + np.array([0., 0., self.stick_len])
+        print(f"after adding {self.stick_len}, s_2d: {s_2d}, e_2d: {e_2d}")
         # pusher angle depending on x-axis
         if (s_2d - e_2d)[0] == 0:
             pusher_angle = np.pi/2
@@ -345,7 +346,7 @@ class FlexEnv(gym.Env):
                 y_increment = (e_2d[2] - s_2d[2]) / 2
                 x_increment = (e_2d[0] - s_2d[0]) / 2
                 print(f"using new poke waypoints, increment: {y_increment}")
-                way_points = [s_2d, s_2d + [0., 0., y_increment], e_2d, e_2d]
+                way_points = [s_2d, s_2d + [0., 0., y_increment], e_2d, e_2d, e_2d + [0., 0., -y_increment], s_2d]
         self.reset_robot(self.rest_joints)
         print(way_points)
 
@@ -569,12 +570,15 @@ class FlexEnv(gym.Env):
         
         pos_x, pos_y, pos_z = positions[:, 0], positions[:, 1], positions[:, 2]
         center_x, center_y, center_z = np.median(pos_x), np.median(pos_y), np.median(pos_z)
+        max_y = np.max(pos_y)
         chosen_points = []
         for idx, (x, y, z) in enumerate(zip(pos_x, pos_y, pos_z)):
             # only choose obj particles that are upper 3rd quadrant of y_coordinates
             # choose obj particles that are above the table
+            # sample surface particles only instead of middle ones (top 10% of y coordinates)
+            # end effector point is at the top of the stick, not the bottom, so add self.stick_len back
             if np.sqrt((x-center_x)**2 + (y-center_y)**2 + (z-center_z)**2) < 2.0 and y >= self.wkspace_height \
-                and y >= (center_y/2):
+                and y >= (max_y * 0.9):
                 chosen_points.append(idx)
         print(f'chosen points {len(chosen_points)} out of {num_points}.')
         if len(chosen_points) == 0:
@@ -594,13 +598,14 @@ class FlexEnv(gym.Env):
             # startpoint_pos = [x_start, z_start, y_start]
             #startpoint_pos_origin = np.random.uniform(-self.action_space, self.action_space, size=(1, 3))
             #y_start = np.random.uniform(np.max(pos_y) + 2.0, np.max(pos_y) + 5.0)
-            x_disturb = np.random.uniform(-1.0, 1.0)
+            x_disturb = np.random.uniform(-0.5, 0.5)
+            z_disturb = np.random.uniform(-0.5, 0.5)
             if (np.abs(x_disturb) > 0.5):
                 # larger x disturb --> higher y start
-                y_start = np.random.uniform(np.max(pos_y) + 3.0, np.max(pos_y) + 6.0)
+                y_start = np.random.uniform(max_y + 0.5, max_y + 3.0)
             else:
-                y_start = np.random.uniform(np.max(pos_y) + 2.0, np.max(pos_y) + 5.0)
-            startpoint_pos_origin = np.array([obj_pos[0]+x_disturb, obj_pos[2], y_start]).reshape(1,3)
+                y_start = np.random.uniform(max_y + 0.5, max_y + 2.0)
+            startpoint_pos_origin = np.array([obj_pos[0]+x_disturb, obj_pos[2]+z_disturb, y_start]).reshape(1,3)
             startpoint_pos = startpoint_pos_origin.copy()
             startpoint_pos = startpoint_pos.reshape(-1)
             # similar x,z as the target obj particle pos

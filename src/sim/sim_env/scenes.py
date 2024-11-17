@@ -206,18 +206,20 @@ def softbody_scene():
 
     # softbody trans position
     #trans = [0., 0.5, 2.0] # [x, y, z]
-    trans = [rand_float(0., 2.0), 0.5, rand_float(0., 2.0)]
+    # table's x-axis (width) is shorter, 3.5*2=7 grid = 700mm
+    # table's z-axis (length) is longer, 4.5*2=9 grid = 900mm
+    trans = [rand_float(0., 1.0), 0.5, rand_float(0., 2.0)]
     print(f"softbody trans: {trans}")
         
     # softbody scale
     #edge_length = rand_float(1.0, 3.0)
     #rope_thickness = 3.0
-    
+
     # make sure object isn't too large. or else you'd need to modify the number of max particles and the cluster radius
     # otherwise particles will be too spread apart to form edges
-    s_scale = rand_int(10, 30)
-    # allow greater variance for height
-    scale = np.array([rand_float(2.0, 3.0), rand_float(1.0, 5.0), rand_float(2.0, 3.0)]) * s_scale #* 50
+    s_scale = rand_int(10, 25)
+    # allow greater variance for height, but don't allow anything beyond 80
+    scale = np.array([rand_float(2.0, 3.0), rand_float(1.0, 4.0), rand_float(2.0, 3.0)]) * s_scale #* 50
     print(f"softbody scale: {scale} with s_scale: {s_scale}")
     
     # softbody stiffness
@@ -251,12 +253,12 @@ def softbody_scene():
 
     particleFriction = 0.25
     
-    draw_mesh = 1
+    draw_mesh = 0 #1 set 0 for particles only, no mesh
 
     relaxtion_factor = 1.
     collisionDistance = radius * 0.5
 
-    # ratio of particles (from bottom up) to keep fixed
+    # ratio of particles (from bottom up) to keep fixed. Set 0 to not have any fixed particles. Usually set to 10 (10%)
     num_fixed_particles = 10
 
     # coordinate to determine which particles are fixed (x,y, or z)
@@ -273,7 +275,7 @@ def softbody_scene():
         z_rotation = 90. #rand_float(10, 20)
         x_rotation = 90. 
         y_rotation = 90.
-        rot_1 = Rotation.from_euler('xyz', [0, 0, z_rotation], degrees=True)
+        rot_1 = Rotation.from_euler('xyz', [0, 0, 0], degrees=True)
         rotate = rot_1.as_quat()
         # rot_2 = Rotation.from_euler('xyz', [0, 0, z_rotation], degrees=True)
         # rotate_2 = rot_2.as_quat()
@@ -281,22 +283,23 @@ def softbody_scene():
         # rot_3 = Rotation.from_euler('xyz', [0, y_rotation, 0.], degrees=True)
         # rotate_3 = rot_3.as_quat()
         # rotate = quaternion_multuply(rotate, rotate_3)
-        #rotate = [0., 0., 0., 1.]
     else:
         # softbody rotation
+        # Don't rotate the box along x or z axis
         #x_rotation = 45.
-        z_rotation = rand_float(10, 20)
-        y_rotation = 90. 
+        # y axis is height, x is perpendicular to the robot arm, z is along the length of the table
+        #z_rotation = rand_float(10, 20)
+        y_rotation = rand_float(0., 90.) #90. 
         rot_1 = Rotation.from_euler('xyz', [0, y_rotation, 0.], degrees=True)
         rotate_1 = rot_1.as_quat()
-        rot_2 = Rotation.from_euler('xyz', [0, 0, z_rotation], degrees=True)
-        rotate_2 = rot_2.as_quat()
+        #rot_2 = Rotation.from_euler('xyz', [0, 0, z_rotation], degrees=True)
+        #rotate_2 = rot_2.as_quat()
         #first_rotate = quaternion_multuply(rotate_1, rotate_2)
         #rot_3 = Rotation.from_euler('xyz', [x_rotation, 0, 0], degrees=True)
         #rotate_3 = rot_3.as_quat()
-        rotate = quaternion_multuply(rotate_1, rotate_2)
+        rotate = rotate_1 #quaternion_multuply(rotate_1, rotate_2)
     
-
+    print("rotate: ", rotate)
     # params
     scene_params = np.array([*scale, *trans, radius, 
                             cluster_spacing, cluster_radius, cluster_stiffness,
