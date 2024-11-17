@@ -311,11 +311,12 @@ def rollout_dataset(model, device, config, save_dir, viz, keep_prev_fps, hetero)
             assert len(imgs) == len(pair_lists_episode)
             # Save the original images and make into movie
             print(f"saving OG images...")
-            pred_out_path = os.path.join(save_dir, f"epi_{episode_idx}_og.mp4")
+            og_img_path = os.path.join(save_dir, f"og_epi_{episode_idx}")
+            pred_out_path = os.path.join(og_img_path, f"epi_{episode_idx}_og.mp4")
             fps = 10
             for i,img in enumerate(imgs):
-                cv2.imwrite(os.path.join(save_dir, f'epi_{episode_idx}_step_{i}_og.jpg'), img)
-            moviepy_merge_video(save_dir, 'og', pred_out_path, fps)
+                cv2.imwrite(os.path.join(og_img_path, f'epi_{episode_idx}_step_{i}_og.jpg'), img)
+            moviepy_merge_video(og_img_path, 'og', pred_out_path, fps)
         else:
             imgs, cam_info = None, None
         

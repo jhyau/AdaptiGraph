@@ -2,13 +2,13 @@ dataset:
   #folder: "../sim_data" # folder to save data
   folder: "/media/motion/Elements/adaptigraph/sim_data"
   obj: "softbody"
-  save_dir: "particles-only-box-mix-y-s-m-e-e-waypoints-softbody"
+  save_dir: "10-epi-particles-only-box-mix-y-s-m-e-e-m-s-waypoints-softbody"
 
   # data collection
   base: 0
-  n_episode: 5
+  n_episode: 10
   n_timestep: 5
-  n_worker: 2
+  n_worker: 4
   
   # sim env
   headless: True # False: OpenGL visualization
