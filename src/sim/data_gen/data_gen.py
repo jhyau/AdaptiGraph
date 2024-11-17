@@ -185,6 +185,10 @@ if __name__ == "__main__":
         ### multiprocessing
         num_bases = n_episode // n_worker
         bases = [base_0 + n_worker*n for n in range(num_bases)]
+        if n_episode % n_worker > 0:
+            # take account of the remainder episodes
+            mod = n_episode % n_worker
+            bases.append(base_0 + n_worker*num_bases)
         print(f"num_bases: {len(bases)}")
         print(bases)
 
@@ -192,6 +196,9 @@ if __name__ == "__main__":
             print("base:", base)
             infos=[]
             for i in range(n_worker):
+                epi = base+i
+                if epi == n_episode:
+                    break
                 info = {
                     "epi": base+i,
                     "save_data": args.save,

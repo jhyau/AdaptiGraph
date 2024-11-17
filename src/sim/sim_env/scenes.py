@@ -211,9 +211,11 @@ def softbody_scene():
         
     # softbody scale
     #edge_length = rand_float(1.0, 3.0)
-    #print(f"edge_length: {edge_length}")
     #rope_thickness = 3.0
-    s_scale = rand_int(10, 50)
+    
+    # make sure object isn't too large. or else you'd need to modify the number of max particles and the cluster radius
+    # otherwise particles will be too spread apart to form edges
+    s_scale = rand_int(10, 30)
     # allow greater variance for height
     scale = np.array([rand_float(2.0, 3.0), rand_float(1.0, 5.0), rand_float(2.0, 3.0)]) * s_scale #* 50
     print(f"softbody scale: {scale} with s_scale: {s_scale}")
@@ -262,7 +264,7 @@ def softbody_scene():
 
     # Load box (actual cube) [0 or 3] or sphere [1] or cylinder[2]
     # ignore cube mesh (rectangular) for now
-    obj_type = rand_int(0, 4)
+    obj_type = 0 #rand_int(0, 4)
 
     # if cylinder, don't rotate in y direction
     if obj_type == 2:
@@ -271,7 +273,7 @@ def softbody_scene():
         z_rotation = 90. #rand_float(10, 20)
         x_rotation = 90. 
         y_rotation = 90.
-        rot_1 = Rotation.from_euler('xyz', [x_rotation, 0, 0], degrees=True)
+        rot_1 = Rotation.from_euler('xyz', [0, 0, z_rotation], degrees=True)
         rotate = rot_1.as_quat()
         # rot_2 = Rotation.from_euler('xyz', [0, 0, z_rotation], degrees=True)
         # rotate_2 = rot_2.as_quat()
