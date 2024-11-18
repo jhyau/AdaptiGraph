@@ -5,6 +5,7 @@ import cv2
 import moviepy.editor as mpy
 import torch
 import time
+import natsort
 
 from dynamics.utils import rgb_colormap, pad, pad_torch
 from dynamics.dataset.graph import fps, construct_edges_from_states
@@ -13,8 +14,11 @@ from sim.data_gen.data import load_data
 def moviepy_merge_video(image_path, image_type, out_path, fps=20):
     print(f"moviepy merge image_path: {image_path}")
     # load images
-    image_files = sorted([os.path.join(image_path, img) for img in os.listdir(image_path) if img.endswith(f'{image_type}.jpg')])
+    #image_files = sorted([os.path.join(image_path, img) for img in os.listdir(image_path) if img.endswith(f'{image_type}.jpg')])
+    # use natural sort to ensure alphanumeric sorting order
+    image_files = natsort.natsorted([os.path.join(image_path, img) for img in os.listdir(image_path) if img.endswith(f'{image_type}.jpg')])
     print(f"num image files: {len(image_files)}")
+    #print(image_files)
     # create a video clip from the images
     clip = mpy.ImageSequenceClip(image_files, fps=fps)
     # write the video clip to a file

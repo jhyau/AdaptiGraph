@@ -345,8 +345,9 @@ class FlexEnv(gym.Env):
                 # need stay at the target for a while
                 y_increment = (e_2d[2] - s_2d[2]) / 2
                 x_increment = (e_2d[0] - s_2d[0]) / 2
+                z_increment = (e_2d[1] - s_2d[1]) / 2
                 print(f"using new poke waypoints, increment: {y_increment}")
-                way_points = [s_2d, s_2d + [0., 0., y_increment], e_2d, e_2d, e_2d + [0., 0., -y_increment], s_2d]
+                way_points = [s_2d, s_2d + [x_increment, z_increment, y_increment], e_2d, e_2d, e_2d + [-x_increment, -z_increment, -y_increment], s_2d]
         self.reset_robot(self.rest_joints)
         print(way_points)
 
@@ -581,6 +582,11 @@ class FlexEnv(gym.Env):
             # sample both surface and some penetration points, upper half
             # end effector point is at the top of the stick, not the bottom, so add self.stick_len back
             if np.sqrt((x-center_x)**2 + (y-center_y)**2 + (z-center_z)**2) < 2.0 and y >= self.wkspace_height:
+                # Point cannot be farther down than stick len
+                # the distance from particle to top of the object can't be more than the stick len
+                dist = np.absolute(y - max_y)
+                if dist > self.stick_len:
+                    continue
                 # choose surface points only or also include middle points
                 if is_surface_poke:
                     if y >= (max_y * 0.95):
@@ -609,11 +615,11 @@ class FlexEnv(gym.Env):
             #y_start = np.random.uniform(np.max(pos_y) + 2.0, np.max(pos_y) + 5.0)
             x_disturb = np.random.uniform(-0.5, 0.5)
             z_disturb = np.random.uniform(-0.5, 0.5)
-            if (np.abs(x_disturb) > 0.5):
+            #if (np.abs(x_disturb) > 0.5):
                 # larger x disturb --> higher y start
-                y_start = np.random.uniform(max_y + 0.5, max_y + 3.0)
-            else:
-                y_start = np.random.uniform(max_y + 0.5, max_y + 2.0)
+            #    y_start = np.random.uniform(max_y + 0.5, max_y + 3.0)
+            #else:
+            y_start = np.random.uniform(max_y + 0.5, max_y + 2.0)
             startpoint_pos_origin = np.array([obj_pos[0]+x_disturb, obj_pos[2]+z_disturb, y_start]).reshape(1,3)
             startpoint_pos = startpoint_pos_origin.copy()
             startpoint_pos = startpoint_pos.reshape(-1)
@@ -628,7 +634,8 @@ class FlexEnv(gym.Env):
             #     x_end = obj_pos[0] + 1.0 #rand_float(1.5, 2.0)
             #y_end = slope * (x_end - startpoint_pos[0]) + startpoint_pos[1]
             y_end = obj_pos[1] # go a bit beyond the point to poke it
-            endpoint_pos = np.array([obj_pos[0], startpoint_pos[1], y_end]) #np.array([x_end, y_end])
+            # endpoint is particle's position
+            endpoint_pos = np.array([obj_pos[0], obj_pos[2], y_end]) #np.array([x_end, y_end])
             #and np.abs(x_end) < 1.5 and np.abs(y_end) < 1.5
             if obj_pos[1] != startpoint_pos[2] and vertical < 0 \
                 and np.min(cdist(startpoint_pos_origin, pos_xyz)) > 0.2:

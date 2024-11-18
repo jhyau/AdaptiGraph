@@ -50,7 +50,7 @@ pip install  dgl -f https://data.dgl.ai/wheels/torch-2.2/cu121/repo.html
 pip install torch==2.2.1 torchvision==0.17.1 torchaudio==2.2.1 --index-url https://download.pytorch.org/whl/cu121
 
 # install required packages for the dynamics model
-pip install opencv-contrib-python scipy scikit-optimize cma pyyaml dgl matplotlib open3d threadpoolctl gdown ipdb pydantic moviepy
+pip install opencv-contrib-python scipy scikit-optimize cma pyyaml dgl matplotlib open3d threadpoolctl gdown ipdb pydantic moviepy natsort
 ```
 
 The following are optional installation steps for real planning experiments and simulation data generation:
