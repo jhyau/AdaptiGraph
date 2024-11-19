@@ -2,11 +2,11 @@ dataset:
   #folder: "../sim_data" # folder to save data
   folder: "/media/motion/Elements/adaptigraph/sim_data"
   obj: "softbody"
-  save_dir: "mixed-stiff-particles-only-box-mix-s-m-e-e-m-s-waypoints-softbody"
+  save_dir: "softbody-poking-s-m-e-e-m-s-waypoints"
 
   # data collection
   base: 0
-  n_episode: 20
+  n_episode: 1000
   n_timestep: 5
   n_worker: 4
   
@@ -44,4 +44,4 @@ dataset:
   non_contact_interval: 30
 
   # others
-  color_threshold: 0.01
+  color_threshold: 0.0001

@@ -219,7 +219,7 @@ def softbody_scene():
     # otherwise particles will be too spread apart to form edges
     s_scale = rand_int(10, 25)
     # allow greater variance for height, but don't allow anything beyond 80
-    scale = np.array([rand_float(2.0, 3.0), rand_float(1.0, 4.0), rand_float(2.0, 3.0)]) * s_scale #* 50
+    scale = np.array([rand_float(2.0, 3.0), rand_float(1.0, 3.5), rand_float(2.0, 3.0)]) * s_scale #* 50
     print(f"softbody scale: {scale} with s_scale: {s_scale}")
     
     # softbody stiffness
@@ -231,6 +231,16 @@ def softbody_scene():
     else:
         global_stiffness = (stiffness - 0.5) * 4e-4 + 1e-4
         cluster_spacing = 6 + 4 * (stiffness - 0.5)
+    
+    # For very soft cases, don't want the cube to be too tall
+    if stiffness < 0.1:
+        base_area = scale[0] * scale[2]
+        longer_side = np.max(scale)
+        tall_area = longer_side * scale[1]
+        if tall_area > 2*base_area:
+            s_scale = rand_int(10, 20)
+            scale = np.array([rand_float(2.0, 3.0), rand_float(1.0, 3.5), rand_float(2.0, 3.0)]) * s_scale #* 50
+            print(f"!!!!!!!!!!!!!!!!!!!!very soft, resetting softbody scale: {scale} with s_scale: {s_scale}")
     
     # softbody frtction
     dynamicFriction = 0.1
@@ -253,7 +263,7 @@ def softbody_scene():
 
     particleFriction = 0.25
     
-    draw_mesh = 0 #1 set 0 for particles only, no mesh
+    draw_mesh = 1 #set 0 for particles only, no mesh
 
     relaxtion_factor = 1.
     collisionDistance = radius * 0.5

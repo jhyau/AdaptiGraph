@@ -1,7 +1,7 @@
 dataset_config:
   data_name: "softbody"
-  output_name: "mixed-stiff-particles-only-box-mix-s-m-e-e-m-s-waypoints-softbody"
-  data_folder: "mixed-stiff-particles-only-box-mix-s-m-e-e-m-s-waypoints-softbody"
+  output_name: "softbody-poking-s-m-e-e-m-s-waypoints"
+  data_folder: "softbody-poking-s-m-e-e-m-s-waypoints"
   materials: ["softbody"]
   #data_dir: "../sim_data" # data directory
   data_dir: "/media/motion/Elements/adaptigraph/sim_data"
@@ -16,10 +16,10 @@ dataset_config:
   dist_thresh: 0.1 # 1.0cm
 
   ratio:
-    #train: [0, 0.98]
-    #valid: [0.98, 1]
-    train: [0, 0]
-    valid: [0, 1]
+    train: [0, 0.98]
+    valid: [0.98, 1]
+    #train: [0, 0]
+    #valid: [0, 1]
 
   eef:
     max_neef: 1
@@ -32,8 +32,8 @@ dataset_config:
   
   datasets:
     - name: 'softbody'
-      max_nobj: 100
-      max_nR: 1500 #1000
+      max_nobj: 150
+      max_nR: 2000 #1000
       fps_radius_range: [0.18, 0.22]
       adj_radius_range: [0.48, 0.52]
       topk: 10

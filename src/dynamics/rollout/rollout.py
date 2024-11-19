@@ -195,6 +195,7 @@ def rollout_episode_pushes(model, device, dataset_config, material_config,
     
     ## get steps
     #pairs_path = os.path.join(dataset_config['prep_data_dir'], dataset_config['data_name']+"_set_action_first_try_100_epochs", 'frame_pairs')
+    print(f"episode index: {episode_idx}")
     data_name = dataset_config['data_name']
     if "data_folder" in dataset_config.keys():
         data_folder = dataset_config['data_folder']
@@ -375,6 +376,8 @@ def rollout(config, epoch, ckpt_data_name, viz=False, keep_prev_fps=False, heter
     device = torch.device(dataset_config['device'])
     
     data_name = dataset_config['data_name']
+    if ckpt_data_name is None:
+        ckpt_data_name = data_name
     out_dir = os.path.join(rollout_config['out_dir'])
     if "output_name" in dataset_config:
         save_dir = os.path.join(out_dir, f'rollout-{dataset_config["output_name"]}-model_{epoch}')
@@ -411,7 +414,7 @@ def rollout(config, epoch, ckpt_data_name, viz=False, keep_prev_fps=False, heter
 if __name__ == "__main__":
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument('--config', type=str, default='config/dynamics/rope.yaml')
-    arg_parser.add_argument('--ckpt_data_name', type=str, default='rope')
+    arg_parser.add_argument('--ckpt_data_name', type=str, default=None)
     arg_parser.add_argument('--epoch', type=str, default='100')
     arg_parser.add_argument('--viz', action='store_true')
     arg_parser.add_argument('--keep_prev_fps', action='store_true') # set this flag to keep FPS indices for all time steps

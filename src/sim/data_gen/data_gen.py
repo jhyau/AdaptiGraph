@@ -28,6 +28,8 @@ def gen_data(info):
             obj_dir = os.path.join(data_dir, obj)
         epi_dir = os.path.join(obj_dir, f'{idx_episode:06}')
         os.makedirs(epi_dir, exist_ok=True)
+        bad_epi_path = os.path.join(obj_dir, "bad_episodes.txt")
+        bad_epis_f = open(bad_epi_path, "w")
 
     # set env 
     env = FlexEnv(config)
@@ -125,6 +127,11 @@ def gen_data(info):
                 if k == 9:
                     stuck = True
                     print('The process is stucked on episode %d timestep %d!!!!' % (idx_episode, idx_timestep))
+                    if idx_timestep == 0:
+                        if save_data:
+                            bad_epis_f.write(idx_episode + "\n")
+                        print(f"episode {idx_episode} has no valid time steps, stuck on {idx_timestep}")
+                        #raise Exception("Stuck on the first step in data gen...")
             else:
                 break
         
@@ -141,6 +148,8 @@ def gen_data(info):
         
     end_time = time.time()
     print('Episode %d time: ' % idx_episode, end_time - start_time, '\n')
+    if save_data:
+        bad_epis_f.close()
             
     env.close()
 
