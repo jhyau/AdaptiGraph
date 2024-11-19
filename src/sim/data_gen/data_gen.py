@@ -18,7 +18,8 @@ def gen_data(info):
     
     idx_episode = info["epi"]
     save_data = info["save_data"]
-    
+    action_type = info["action_type"]
+
     if save_data:
         # create folder
         if save_dir:
@@ -70,6 +71,7 @@ def gen_data(info):
     img = env.render()
     last_img = img.copy()
     stuck = False
+    prev_u = None
     for idx_timestep in range(n_timestep):
         color_diff = 0
         data = [], [], [], [], [] # reinitialize data for each timestep
@@ -83,6 +85,19 @@ def gen_data(info):
                     u, boundary_points, boundary = env.sample_action(init=True)
                 else:
                     u, boundary_points, boundary = env.sample_action(boundary_points=boundary_points, boundary=boundary)
+            elif obj in ["softbody"]:
+                if action_type is not None and action_type == "poke":
+                    print(f"poking")
+                    u = env.sample_action()
+                    action_type = "lift"
+                    prev_u = u
+                elif action_type is not None and action_type == "lift":
+                    # set prev_u but reversed so the end is now start and start is end
+                    print(f"lifting")
+                    u = np.concatenate([prev_u[3:], prev_u[:3]])
+                    action_type = "poke"
+                else:
+                    raise Exception("For softbody, need action_type")
             else:
                 u = env.sample_action() # [x_start, z_start, x_end, z_end]
                 # hard set the start and end to be a specific action
@@ -116,14 +131,17 @@ def gen_data(info):
             # step
             img, data = env.step(u, save_data, data)
 
-            # if action_type is not None and action_type == "poke":
-            #     # no need to do difference check
-            #     break
+            # For lifting action, it must go through to match the previous poking action. no checking
+            if action_type is not None and action_type == "poke" and obj in ["softbody"]:
+                break
             
             # check valid/invalid action to make difference large enough
             color_diff = np.mean(np.abs(img[:, :, :3] - last_img[:, :, :3]))
             if color_diff < color_threshold:
                 data = [], [], [], [], []
+                # if action_type is not none, then redo poke
+                if action_type is not None:
+                    action_type = "poke"
                 if k == 9:
                     stuck = True
                     print('The process is stucked on episode %d timestep %d!!!!' % (idx_episode, idx_timestep))
@@ -183,20 +201,22 @@ if __name__ == "__main__":
         action_type = dataset_config["action_type"]
     else:
         action_type = None
+    print("action type: ", action_type)
 
     if args.debug:
         info = {
             "epi": base_0,
             "save_data": args.save,
+            "action_type": action_type,
         }
         gen_data(info)
     else:
         ### multiprocessing
-        num_bases = n_episode // n_worker
+        num_bases = (n_episode - base_0) // n_worker
         bases = [base_0 + n_worker*n for n in range(num_bases)]
-        if n_episode % n_worker > 0:
+        if (n_episode - base_0) % n_worker > 0:
             # take account of the remainder episodes
-            mod = n_episode % n_worker
+            mod = (n_episode - base_0) % n_worker
             bases.append(base_0 + n_worker*num_bases)
         print(f"num_bases: {len(bases)}")
         print(bases)
@@ -211,6 +231,7 @@ if __name__ == "__main__":
                 info = {
                     "epi": base+i,
                     "save_data": args.save,
+                    "action_type": action_type,
                 }
                 infos.append(info)
             pool = mp.Pool(processes=n_worker)
