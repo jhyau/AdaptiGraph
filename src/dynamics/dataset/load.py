@@ -75,6 +75,41 @@ def load_dataset(dataset_config, material_config, phase='train'):
     
     return pair_lists, physics_params
 
+def get_position_paths(dataset_config):
+    # Only save the paths to each episode and lazily load it in when needed
+    data_name = dataset_config['data_name']
+    if "data_folder" in dataset_config.keys():
+        data_folder = dataset_config['data_folder']
+    else:
+        data_folder = data_name
+    prep_dir = os.path.join(dataset_config['prep_data_dir'], data_folder)#+"_set_action_first_try_100_epochs")
+    print(f"get_position_paths in load.py, prep_dir: {prep_dir}")
+    positions_pkls = sorted(glob.glob(os.path.join(prep_dir, "*_positions.pkl")))
+    return positions_pkls
+
+def lazy_load_positions(positions_pkls, episode_idx):
+    # Only save the paths to each episode and lazily load it in when needed
+    # data_name = dataset_config['data_name']
+    # if "data_folder" in dataset_config.keys():
+    #     data_folder = dataset_config['data_folder']
+    # else:
+    #     data_folder = data_name
+    # prep_dir = os.path.join(dataset_config['prep_data_dir'], data_folder)#+"_set_action_first_try_100_epochs")
+    # print(f"lazy_load_positions in load.py, prep_dir: {prep_dir}")
+    # positions_pkls = sorted(glob.glob(os.path.join(prep_dir, "*_positions.pkl")))
+    # print("len of sorted positions pkl: ", len(positions_pkls))
+    ## load positions
+    # ['eef_pos', 'obj_pos']
+    # eef_pos: (T, N_eef, 3)
+    # obj_pos: (T, N_obj, 3)
+    pkl_path = positions_pkls[episode_idx]
+    # print(f"Loading in from: {pkl_path}")
+    with open(pkl_path, "rb") as f:
+        positions = pickle.load(f)
+    eef_pos = positions['eef_pos']
+    obj_pos = positions['obj_pos']
+    return eef_pos, obj_pos
+
 def load_positions(dataset_config):
     ## config
     data_name = dataset_config['data_name']

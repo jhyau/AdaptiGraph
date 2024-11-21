@@ -78,7 +78,7 @@ def train(config):
                 loss_sum_list = []
                 n_iters = train_config['n_iters_per_epoch'][phase] \
                         if train_config['n_iters_per_epoch'][phase] != -1 else len(datasets[phase])
-                for i in range(n_iters):
+                for i in tqdm(range(n_iters)):
                     data = next(dataloaders[phase])
                     if phase == 'train':
                         optimizer.zero_grad()

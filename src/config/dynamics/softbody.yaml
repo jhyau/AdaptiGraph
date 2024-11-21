@@ -1,7 +1,9 @@
 dataset_config:
   data_name: "softbody"
-  output_name: "softbody-poking-s-m-e-e-m-s-waypoints"
-  data_folder: "softbody-poking-s-m-e-e-m-s-waypoints"
+  #output_name: "test-hard-0-99-softbody-poke-then-lift-s-m-e-e-waypoints"
+  #data_folder: "test-hard-0-99-softbody-poke-then-lift-s-m-e-e-waypoints"
+  output_name: "softbody-poking-s-m-e-e-waypoints"
+  data_folder: "softbody-poking-s-m-e-e-waypoints"
   materials: ["softbody"]
   #data_dir: "../sim_data" # data directory
   data_dir: "/media/motion/Elements/adaptigraph/sim_data"
@@ -16,8 +18,10 @@ dataset_config:
   dist_thresh: 0.1 # 1.0cm
 
   ratio:
-    train: [0, 0.98]
-    valid: [0.98, 1]
+    train: [0, 0.9]
+    valid: [0.9, 1]
+    #train: [0, 0.98]
+    #valid: [0.98, 1]
     #train: [0, 0]
     #valid: [0, 1]
 

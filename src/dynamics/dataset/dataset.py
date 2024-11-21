@@ -4,7 +4,7 @@ from torch.utils.data import Dataset
 
 from sim.utils import load_yaml
 from dynamics.utils import pad, pad_torch
-from dynamics.dataset.load import load_dataset, load_positions
+from dynamics.dataset.load import load_dataset, load_positions, lazy_load_positions, get_position_paths
 from dynamics.dataset.graph import fps, construct_edges_from_states
 
 class DynDataset(Dataset):
@@ -57,12 +57,20 @@ class DynDataset(Dataset):
         # load positions and physics parameters
         # eef_pos: (n_epis, T, N_eef, 3)
         # obj_pos: (n_epis, T, N_obj, 3)
-        self.eef_pos, self.obj_pos = load_positions(dataset_config)
-        self.pos_dim = self.obj_pos[0].shape[-1]
+        #self.eef_pos, self.obj_pos = load_positions(dataset_config)
+        #self.pos_dim = self.obj_pos[0].shape[-1]
+
+        # Do lazy loading instead, only load in the particle positions when needed instead of all at once
+        # eef_pos: (T, N_eef, 3)
+        # obj_pos: (T, N_obj, 3)
+        self.positions_paths = get_position_paths(dataset_config)
+        self.eef_pos_0, self.obj_pos_0 = lazy_load_positions(self.positions_paths, 0)
+        self.pos_dim = self.obj_pos_0.shape[-1]
         
         # get dimensions
         self.obj_dim = self.max_nobj
-        self.eef_dim = self.eef_pos[0].shape[1]
+        #self.eef_dim = self.eef_pos[0].shape[1]
+        self.eef_dim = self.eef_pos_0.shape[1]
         self.state_dim = self.obj_dim + self.eef_dim
         if self.verbose:
             print(f"object dimension: {self.obj_dim}, eef dimension: {self.eef_dim}.")
@@ -74,17 +82,24 @@ class DynDataset(Dataset):
         episode_idx = self.pair_lists[idx][0].astype(int)
         pair = self.pair_lists[idx][1:].astype(int)
         assert len(pair) == self.n_his + self.n_future
-        
+
+        # Do lazy loading instead, only load in the particle positions when needed instead of all at once
+        # eef_pos: (T, N_eef, 3)
+        # obj_pos: (T, N_obj, 3)
+        eef_pos, obj_pos = lazy_load_positions(self.positions_paths, episode_idx)
+
         ## get history keypoints
         obj_kps = []
         eef_kps = []
         for i in range(len(pair)):
             frame_idx = pair[i]
             # eef keypoints
-            eef_kp = self.eef_pos[episode_idx][frame_idx] # (N_eef, 3)
+            #eef_kp = self.eef_pos[episode_idx][frame_idx] # (N_eef, 3)
+            eef_kp = eef_pos[frame_idx]
             eef_kps.append(eef_kp)
             # object keypoints
-            obj_kp = self.obj_pos[episode_idx][frame_idx] # (N_obj, 3)
+            #obj_kp = self.obj_pos[episode_idx][frame_idx] # (N_obj, 3)
+            obj_kp = obj_pos[frame_idx]
             obj_kps.append(obj_kp)
         
         # obj_kps: (T, N_obj_all, 3)
