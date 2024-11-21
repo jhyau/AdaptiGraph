@@ -91,11 +91,28 @@ def load_positions(dataset_config):
     # obj_pos: (n_epis, T, N_obj, 3)
     # phys_params: (n_epis, 1)
     positions_path = os.path.join(prep_dir, 'positions.pkl')
-    with open(positions_path, 'rb') as f:
-        positions = pickle.load(f) 
-    eef_pos = positions['eef_pos'] 
-    obj_pos = positions['obj_pos']
-    return eef_pos, obj_pos
+    if os.path.exists(positions_path):
+        with open(positions_path, 'rb') as f:
+            positions = pickle.load(f) 
+        eef_pos = positions['eef_pos'] 
+        obj_pos = positions['obj_pos']
+        return eef_pos, obj_pos
+    else:
+        # Load each episode's pickle
+        eef_pos = []
+        obj_pos = []
+        positions_pkls = sorted(glob.glob(os.path.join(prep_dir, "*_positions.pkl")))
+        print("sorted positions pkl: ", positions_pkls)
+        # Sort in episodic order
+        for idx,pkl_path in enumerate(positions_pkls):
+            print(f"loading from {pkl_path}")
+            with open(pkl_path, "rb") as f:
+                positions = pickle.load(f)
+            eef_step = positions['eef_pos']
+            obj_step = positions['obj_pos']
+            eef_pos.append(eef_step)
+            obj_pos.append(obj_step)
+        return eef_pos, obj_pos
 
 def load_part_2_instance(dataset_config):
     ## config
@@ -125,8 +142,19 @@ def load_part_inv_weight_is_0(dataset_config):
     prep_dir = os.path.join(dataset_config['prep_data_dir'], data_folder)
     print(f"loading in particle inverse weight is 0 mask in load.py, data_dir: {prep_dir}")
     inv_weight_path = os.path.join(prep_dir, "particle_inv_weight_is_0.pkl")
-    if not os.path.exists(inv_weight_path):
+    part_paths = sorted(glob.glob(os.path.join(prep_dir, "*_particle_inv_weight_is_0.pkl")))
+    if not os.path.exists(inv_weight_path) and len(part_paths) == 0:
         return None
-    with open(inv_weight_path, "rb") as f:
-        inv = pickle.load(f)
-    return inv['particle_inv_weight_is_0']
+    if os.path.exists(inv_weight_path):
+        with open(inv_weight_path, "rb") as f:
+            inv = pickle.load(f)
+        return inv['particle_inv_weight_is_0'] 
+    else:
+        inv = []
+        for idx,part_path in enumerate(part_paths):
+            print(f"loading from {part_path}")
+            with open(part_path, "rb") as f:
+                data = pickle.load(f)
+            inv.append(data)
+        return inv
+    
