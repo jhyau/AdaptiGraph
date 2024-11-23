@@ -2,14 +2,14 @@ dataset:
   #folder: "../sim_data" # folder to save data
   folder: "/media/motion/Elements/adaptigraph/sim_data"
   obj: "softbody"
-  #save_dir: "test-hard-0-99-softbody-poke-then-lift-s-m-e-e-waypoints"
-  save_dir: "softbody-poking-s-m-e-e-waypoints"
+  save_dir: "flatboard-soft-0-01-small-radius-softbody-cubes-forward-poke-s-m-e-e-waypoints"
+  #save_dir: "softbody-poking-s-m-e-e-waypoints"
 
   # data collection
-  base: 997 #37
-  n_episode: 1000 #1000
+  base: 0 #37
+  n_episode: 5 #1000
   n_timestep: 5
-  n_worker: 4
+  n_worker: 2
   
   # sim env
   headless: True # False: OpenGL visualization
@@ -29,10 +29,15 @@ dataset:
   action_type: "poke"
 
   # Tool
-  gripper: False
-  pusher_len: 1.0
+  # For the stick pusher
+  #gripper: False
+  #pusher_len: 1.0
+  # For the gripper
   #gripper: True
   #pusher_len: 1.8
+  # For the flatboard pusher
+  gripper: False
+  pusher_len: 1.3
   
   # Save particles
   fps: False

@@ -145,7 +145,7 @@ def extract_push(eef, dist_thresh, n_his, n_future, n_frames):
     
     return frame_idxs, cnt
 
-def preprocess(config):
+def preprocess(config, lazy_loading):
     time_start = time.time()
     
     # config
@@ -228,10 +228,11 @@ def preprocess(config):
         
         eef_steps = np.concatenate(eef_steps, axis=0)
         obj_steps = np.concatenate(obj_steps, axis=0)
-        
-        #all_eef_pos.append(eef_steps)
-        #all_obj_pos.append(obj_steps)
         assert eef_steps.shape[0] == obj_steps.shape[0] == n_frames
+        if not lazy_loading:
+            all_eef_pos.append(eef_steps)
+            all_obj_pos.append(obj_steps)
+        
         #if len(part_2_obj_steps) > 0:
         #    part_2_obj_steps = np.concatenate(part_2_obj_steps, axis=0)
         #    all_part_2_obj_instance.append(part_2_obj_steps)
@@ -239,27 +240,30 @@ def preprocess(config):
         
         if len(part_inv_weight_0_steps) > 0:
             part_inv_weight_0_steps = np.concatenate(part_inv_weight_0_steps, axis=0)
-            #all_part_inv_weight_is_0.append(part_inv_weight_0_steps)
             assert eef_steps.shape[0] == obj_steps.shape[0] == n_frames == part_inv_weight_0_steps.shape[0]
-            inv_weight_path = os.path.join(save_dir, f"{epi}_particle_inv_weight_is_0.pkl")
-            inv_weight_info = {
-                'particle_inv_weight_is_0': part_inv_weight_0_steps
-            }
-            with open(inv_weight_path, "wb") as f:
-                pickle.dump(inv_weight_info, f)
-            #assert len(all_part_inv_weight_is_0) == num_epis
+            if not lazy_loading:
+                all_part_inv_weight_is_0.append(part_inv_weight_0_steps)
+            else:
+                print(f"Lazy loading, so saving everything in separate episodes...")
+                inv_weight_path = os.path.join(save_dir, f"{epi}_particle_inv_weight_is_0.pkl")
+                inv_weight_info = {
+                    'particle_inv_weight_is_0': part_inv_weight_0_steps
+                }
+                with open(inv_weight_path, "wb") as f:
+                    pickle.dump(inv_weight_info, f)
 
-        # Write out positions for each individual episode (OOM issue when trying to save all at once for 1000 epis)
-        # save eef and object positions
-        # (num_steps, n_particles, 3)
-        pos_path = os.path.join(save_dir, f'{epi}_positions.pkl')
-        pos_info = {
-            'eef_pos': eef_steps, 
-            'obj_pos': obj_steps,
-        }
-        with open(pos_path, 'wb') as f:
-            pickle.dump(pos_info, f)
-        #assert len(all_eef_pos) == len(all_obj_pos) == num_epis
+        if lazy_loading:
+            # Write out positions for each individual episode (OOM issue when trying to save all at once for 1000 epis)
+            # save eef and object positions
+            # (num_steps, n_particles, 3)
+            pos_path = os.path.join(save_dir, f'{epi}_positions.pkl')
+            pos_info = {
+                'eef_pos': eef_steps, 
+                'obj_pos': obj_steps,
+            }
+            with open(pos_path, 'wb') as f:
+                pickle.dump(pos_info, f)
+            assert len(all_eef_pos) == len(all_obj_pos) == num_epis
 
         epi_time_end = time.time()
         print(f'Episode {epi_idx+1}/{num_epis} has frames {obj_steps.shape[0]} took {epi_time_end - epi_time_start:.2f}s.')
@@ -272,15 +276,16 @@ def preprocess(config):
     print(f"Physics params range: {phys_params_range}")
     np.savetxt(os.path.join(save_dir, 'phys_range.txt'), phys_params_range)
     
-    # save eef and object positions
-    #pos_path = os.path.join(save_dir, 'positions.pkl')
-    #pos_info = {
-    #    'eef_pos': all_eef_pos, 
-    #    'obj_pos': all_obj_pos,
-    #}
-    #with open(pos_path, 'wb') as f:
-    #    pickle.dump(pos_info, f)
-    #assert len(all_eef_pos) == len(all_obj_pos) == num_epis
+    if not lazy_loading:
+        # save eef and object positions
+        pos_path = os.path.join(save_dir, 'positions.pkl')
+        pos_info = {
+        'eef_pos': all_eef_pos, 
+        'obj_pos': all_obj_pos,
+        }
+        with open(pos_path, 'wb') as f:
+            pickle.dump(pos_info, f)
+        assert len(all_eef_pos) == len(all_obj_pos) == num_epis
 
     # save particle to object instance mapping
     #if len(all_part_2_obj_instance) > 0:
@@ -292,15 +297,16 @@ def preprocess(config):
     #        pickle.dump(p2o_info, f)
     #    assert len(all_part_2_obj_instance) == num_epis
     
-    # save boolean mask of particles with inverse weight 0
-    #if len(all_part_inv_weight_is_0) > 0:
-    #    inv_weight_path = os.path.join(save_dir, "particle_inv_weight_is_0.pkl")
-    #    inv_weight_info = {
-    #        'particle_inv_weight_is_0': all_part_inv_weight_is_0
-    #    }
-    #    with open(inv_weight_path, "wb") as f:
-    #        pickle.dump(inv_weight_info, f)
-    #    assert len(all_part_inv_weight_is_0) == num_epis
+    if not lazy_loading:
+        # save boolean mask of particles with inverse weight 0
+        if len(all_part_inv_weight_is_0) > 0:
+            inv_weight_path = os.path.join(save_dir, "particle_inv_weight_is_0.pkl")
+            inv_weight_info = {
+                'particle_inv_weight_is_0': all_part_inv_weight_is_0
+            }
+            with open(inv_weight_path, "wb") as f:
+                pickle.dump(inv_weight_info, f)
+            assert len(all_part_inv_weight_is_0) == num_epis
 
     # save metadata
     with open(os.path.join(save_dir, 'metadata.txt'), 'w') as f:
@@ -312,8 +318,9 @@ def preprocess(config):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', type=str, default='config/dynamics/rope.yaml')
+    parser.add_argument("--lazy_loading", action="store_true", help="Set this flag to true to save each episode's position and inverse particle weight is 0 mask separately")
     args = parser.parse_args()
     
     config = load_yaml(args.config)
     
-    preprocess(config)
+    preprocess(config, args.lazy_loading)

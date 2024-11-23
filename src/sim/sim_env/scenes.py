@@ -202,7 +202,7 @@ def softbody_scene():
         rotate_w: index 26
         collisionDistance: index 27
     """
-    radius = 0.03
+    radius = 0.0001 #0.03
 
     # softbody trans position
     #trans = [0., 0.5, 2.0] # [x, y, z]
@@ -223,7 +223,8 @@ def softbody_scene():
     print(f"softbody scale: {scale} with s_scale: {s_scale}")
     
     # softbody stiffness
-    stiffness = np.random.rand()
+    #stiffness = np.random.rand()
+    stiffness = 0.01
     print(f"softbody stiffness for uniform/homogeneous: {stiffness}")
     if stiffness < 0.5:
         global_stiffness = stiffness * 1e-4 / 0.5
@@ -263,7 +264,7 @@ def softbody_scene():
 
     particleFriction = 0.25
     
-    draw_mesh = 1 #set 0 for particles only, no mesh
+    draw_mesh = 0 #set 0 for particles only, no mesh
 
     relaxtion_factor = 1.
     collisionDistance = radius * 0.5

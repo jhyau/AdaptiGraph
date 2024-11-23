@@ -66,6 +66,7 @@ class DynDataset(Dataset):
         self.positions_paths = get_position_paths(dataset_config)
         self.eef_pos_0, self.obj_pos_0 = lazy_load_positions(self.positions_paths, 0)
         self.pos_dim = self.obj_pos_0.shape[-1]
+        print("all particle position paths: ", self.positions_paths)
         
         # get dimensions
         self.obj_dim = self.max_nobj

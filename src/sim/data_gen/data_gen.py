@@ -85,19 +85,19 @@ def gen_data(info):
                     u, boundary_points, boundary = env.sample_action(init=True)
                 else:
                     u, boundary_points, boundary = env.sample_action(boundary_points=boundary_points, boundary=boundary)
-            elif obj in ["softbody"]:
-                if action_type is not None and action_type == "poke":
-                    print(f"poking")
-                    u = env.sample_action()
-                    action_type = "lift"
-                    prev_u = u
-                elif action_type is not None and action_type == "lift":
-                    # set prev_u but reversed so the end is now start and start is end
-                    print(f"lifting")
-                    u = np.concatenate([prev_u[3:], prev_u[:3]])
-                    action_type = "poke"
-                else:
-                    raise Exception("For softbody, need action_type")
+            # elif obj in ["softbody"]:
+            #     if action_type is not None and action_type == "poke":
+            #         print(f"poking")
+            #         u = env.sample_action()
+            #         action_type = "lift"
+            #         prev_u = u
+            #     elif action_type is not None and action_type == "lift":
+            #         # set prev_u but reversed so the end is now start and start is end
+            #         print(f"lifting")
+            #         u = np.concatenate([prev_u[3:], prev_u[:3]])
+            #         action_type = "poke"
+            #     else:
+            #         raise Exception("For softbody, need action_type")
             else:
                 u = env.sample_action() # [x_start, z_start, x_end, z_end]
                 # hard set the start and end to be a specific action
@@ -132,16 +132,16 @@ def gen_data(info):
             img, data = env.step(u, save_data, data)
 
             # For lifting action, it must go through to match the previous poking action. no checking
-            if action_type is not None and action_type == "poke" and obj in ["softbody"]:
-                break
+            # if action_type is not None and action_type == "poke" and obj in ["softbody"]:
+            #     break
             
             # check valid/invalid action to make difference large enough
             color_diff = np.mean(np.abs(img[:, :, :3] - last_img[:, :, :3]))
             if color_diff < color_threshold:
                 data = [], [], [], [], []
                 # if action_type is not none, then redo poke
-                if action_type is not None:
-                    action_type = "poke"
+                # if action_type is not None:
+                #     action_type = "poke"
                 if k == 9:
                     stuck = True
                     print('The process is stucked on episode %d timestep %d!!!!' % (idx_episode, idx_timestep))

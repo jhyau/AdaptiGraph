@@ -103,7 +103,7 @@ def lazy_load_positions(positions_pkls, episode_idx):
     # eef_pos: (T, N_eef, 3)
     # obj_pos: (T, N_obj, 3)
     pkl_path = positions_pkls[episode_idx]
-    # print(f"Loading in from: {pkl_path}")
+    # print(f"Epi index: {episode_idx}, loading in from: {pkl_path}")
     with open(pkl_path, "rb") as f:
         positions = pickle.load(f)
     eef_pos = positions['eef_pos']

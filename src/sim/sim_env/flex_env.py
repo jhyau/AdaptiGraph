@@ -148,14 +148,14 @@ class FlexEnv(gym.Env):
         self.empty_box_shape_states = np.concatenate([center, center, quats, quats])
     
     def add_robot(self):
-        if self.obj in ['granular']:
+        if self.obj in ['granular', 'softbody']:
             # flat board pusher
             robot_base_pos = [-self.wkspace_width-0.6, 0., self.wkspace_height+0.3]
             robot_base_orn = [0, 0, 0, 1]
             self.robotId = pyflex.loadURDF(self.flex_robot_helper, 'sim/assets/xarm/xarm6_with_gripper_board.urdf', 
                                            robot_base_pos, robot_base_orn, globalScaling=10.0) 
             self.rest_joints = np.zeros(8)
-        elif self.obj in ['rope', 'softbody']:
+        elif self.obj in ['rope']:
             # stick pusher
             robot_base_pos = [-self.wkspace_width-0.6, 0., self.wkspace_height+0.3]
             robot_base_orn = [0, 0, 0, 1]
@@ -574,7 +574,8 @@ class FlexEnv(gym.Env):
         center_x, center_y, center_z = np.median(pos_x), np.median(pos_y), np.median(pos_z)
         max_y = np.max(pos_y)
         chosen_points = []
-        is_surface_poke = (np.random.uniform(0.0, 1.0) <= 0.5)
+        # 10% chance to do a surface poke
+        is_surface_poke = (np.random.uniform(0.0, 1.0) <= 0.1)
         print(f"choosing a surface-level particle: {is_surface_poke}")
         for idx, (x, y, z) in enumerate(zip(pos_x, pos_y, pos_z)):
             # only choose obj particles that are upper 3rd quadrant of y_coordinates
@@ -593,9 +594,10 @@ class FlexEnv(gym.Env):
                     if y >= (max_y * 0.95):
                         chosen_points.append(idx)
                 else:
-                    # any point in upper half of the object
-                    if y >= center_y:
-                        chosen_points.append(idx)
+                    # any point in the object
+                    # want medium to deeper pokes
+                    #if y >= center_y:
+                    chosen_points.append(idx)
         print(f'chosen points {len(chosen_points)} out of {num_points}.')
         if len(chosen_points) == 0:
             print('no chosen points')
