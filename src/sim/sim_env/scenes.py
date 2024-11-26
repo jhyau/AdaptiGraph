@@ -202,7 +202,7 @@ def softbody_scene():
         rotate_w: index 26
         collisionDistance: index 27
     """
-    radius = 0.0001 #0.03
+    radius = 0.05 #0.06 #0.03
 
     # softbody trans position
     #trans = [0., 0.5, 2.0] # [x, y, z]
@@ -224,7 +224,8 @@ def softbody_scene():
     
     # softbody stiffness
     #stiffness = np.random.rand()
-    stiffness = 0.01
+    #stiffness = 0.99
+    stiffness = np.random.uniform(0.0, 0.07)
     print(f"softbody stiffness for uniform/homogeneous: {stiffness}")
     if stiffness < 0.5:
         global_stiffness = stiffness * 1e-4 / 0.5
@@ -248,7 +249,7 @@ def softbody_scene():
     
     # others (usually fixed)
     cluster_radius = 0.
-    cluster_stiffness = 0.55
+    cluster_stiffness = 1.0 #0.55
 
     link_radius = 0. 
     link_stiffness = 1.
@@ -268,6 +269,9 @@ def softbody_scene():
 
     relaxtion_factor = 1.
     collisionDistance = radius * 0.5
+
+    # damping: viscous drag force, applies a force proportional and opposite to the particle velocity
+    damping = 1.0
 
     # ratio of particles (from bottom up) to keep fixed. Set 0 to not have any fixed particles. Usually set to 10 (10%)
     num_fixed_particles = 10
@@ -318,7 +322,7 @@ def softbody_scene():
                             surface_sampling, volume_sampling, skinning_falloff, skinning_max_dist,
                             cluster_plastic_threshold, cluster_plastic_creep,
                             dynamicFriction, particleFriction, draw_mesh, relaxtion_factor, 
-                            *rotate, collisionDistance, num_fixed_particles, fixed_coord, obj_type])
+                            *rotate, collisionDistance, num_fixed_particles, fixed_coord, obj_type, damping])
     
     property_params = {'particle_radius': radius,
                     'cluster_radius': cluster_radius,

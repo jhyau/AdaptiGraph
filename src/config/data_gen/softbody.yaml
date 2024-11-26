@@ -2,7 +2,7 @@ dataset:
   #folder: "../sim_data" # folder to save data
   folder: "/media/motion/Elements/adaptigraph/sim_data"
   obj: "softbody"
-  save_dir: "flatboard-soft-0-01-small-radius-softbody-cubes-forward-poke-s-m-e-e-waypoints"
+  save_dir: "damping-1-flatboard-softbody-cubes-poke-and-lift-s-m-e-e-m-s-waypoints"
   #save_dir: "softbody-poking-s-m-e-e-waypoints"
 
   # data collection
@@ -44,10 +44,10 @@ dataset:
   fps_number: 2000
 
   rob_obj_dist_thresh: 0.2
-  #contact_interval: 40
-  #non_contact_interval: 80
-  contact_interval: 10
-  non_contact_interval: 30
+  contact_interval: 40
+  non_contact_interval: 80
+  #contact_interval: 10
+  #non_contact_interval: 30
 
   # others
   color_threshold: 0.0001

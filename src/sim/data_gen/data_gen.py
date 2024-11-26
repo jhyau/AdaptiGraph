@@ -147,7 +147,7 @@ def gen_data(info):
                     print('The process is stucked on episode %d timestep %d!!!!' % (idx_episode, idx_timestep))
                     if idx_timestep == 0:
                         if save_data:
-                            bad_epis_f.write(idx_episode + "\n")
+                            bad_epis_f.write(str(idx_episode) + "\n")
                         print(f"episode {idx_episode} has no valid time steps, stuck on {idx_timestep}")
                         #raise Exception("Stuck on the first step in data gen...")
             else:

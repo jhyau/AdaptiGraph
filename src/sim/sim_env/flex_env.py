@@ -347,8 +347,8 @@ class FlexEnv(gym.Env):
                 x_increment = (e_2d[0] - s_2d[0]) / 2
                 z_increment = (e_2d[1] - s_2d[1]) / 2
                 print(f"using new poke waypoints, increment: {y_increment}")
-                way_points = [s_2d, s_2d + [x_increment, z_increment, y_increment], e_2d, e_2d]
-                #way_points = [s_2d, s_2d + [x_increment, z_increment, y_increment], e_2d, e_2d, e_2d + [-x_increment, -z_increment, -y_increment], s_2d]
+                #way_points = [s_2d, s_2d + [x_increment, z_increment, y_increment], e_2d, e_2d]
+                way_points = [s_2d, s_2d + [x_increment, z_increment, y_increment], e_2d, e_2d, e_2d + [-x_increment, -z_increment, -y_increment], s_2d]
         self.reset_robot(self.rest_joints)
         print(way_points)
 
@@ -574,8 +574,8 @@ class FlexEnv(gym.Env):
         center_x, center_y, center_z = np.median(pos_x), np.median(pos_y), np.median(pos_z)
         max_y = np.max(pos_y)
         chosen_points = []
-        # 10% chance to do a surface poke
-        is_surface_poke = (np.random.uniform(0.0, 1.0) <= 0.1)
+        # no chance to do a surface poke
+        is_surface_poke = False #(np.random.uniform(0.0, 1.0) <= 0.1)
         print(f"choosing a surface-level particle: {is_surface_poke}")
         for idx, (x, y, z) in enumerate(zip(pos_x, pos_y, pos_z)):
             # only choose obj particles that are upper 3rd quadrant of y_coordinates
@@ -597,7 +597,8 @@ class FlexEnv(gym.Env):
                     # any point in the object
                     # want medium to deeper pokes
                     #if y >= center_y:
-                    chosen_points.append(idx)
+                    if y < (0.9 * max_y):
+                        chosen_points.append(idx)
         print(f'chosen points {len(chosen_points)} out of {num_points}.')
         if len(chosen_points) == 0:
             print('no chosen points')

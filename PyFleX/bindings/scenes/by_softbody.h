@@ -169,6 +169,9 @@ public:
 		// Which object to load: the box (exact cube) or cube_mesh (rectangular)
 		int obj_to_load = (int) ptr[30];
 
+		// Damping
+		float damping = ptr[31];
+
 		char box_path[100];
 		std::string obj_path;
 		if (obj_to_load == 0) {
@@ -216,6 +219,7 @@ public:
 		g_params.collisionDistance = collisionDistance;
 
 		g_params.relaxationFactor = mRelaxationFactor;
+		g_params.damping = damping;
 
 		g_windStrength = 0.0f;
 
