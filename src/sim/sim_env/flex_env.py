@@ -347,8 +347,8 @@ class FlexEnv(gym.Env):
                 x_increment = (e_2d[0] - s_2d[0]) / 2
                 z_increment = (e_2d[1] - s_2d[1]) / 2
                 print(f"using new poke waypoints, increment: {y_increment}")
-                way_points = [s_2d, s_2d + [x_increment, z_increment, y_increment], e_2d, e_2d]
-                #way_points = [s_2d, s_2d + [x_increment, z_increment, y_increment], e_2d, e_2d, e_2d + [-x_increment, -z_increment, -y_increment], s_2d]
+                #way_points = [s_2d, s_2d + [x_increment, z_increment, y_increment], e_2d, e_2d]
+                way_points = [s_2d, s_2d + [x_increment, z_increment, y_increment], e_2d, e_2d, e_2d + [-x_increment, -z_increment, -y_increment], s_2d]
         self.reset_robot(self.rest_joints)
         print(way_points)
 

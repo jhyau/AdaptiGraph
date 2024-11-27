@@ -2,12 +2,13 @@ dataset:
   #folder: "../sim_data" # folder to save data
   folder: "/media/motion/Elements/adaptigraph/sim_data"
   obj: "softbody"
-  save_dir: "epi-20-damping-2-flatboard-softbody-cubes-deeper-forward-poke-s-m-e-e-waypoints"
+  save_dir: "y-trans-x-rot-90-flatboard-softbody-cylinder-damping-2-deep-poke-then-lift-s-m-e-e-m-s-waypoints"
+  #save_dir: "epi-20-damping-2-flatboard-softbody-cubes-deeper-forward-poke-s-m-e-e-waypoints"
   #save_dir: "softbody-poking-s-m-e-e-waypoints"
 
   # data collection
   base: 0 #37
-  n_episode: 20 #1000
+  n_episode: 5 #1000
   n_timestep: 5
   n_worker: 2
   
