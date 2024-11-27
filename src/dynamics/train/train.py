@@ -17,7 +17,7 @@ from dynamics.gnn.model import DynamicsPredictor
 from dynamics.dataset.dataset import DynDataset
 from dynamics.utils import set_seed, dataloader_wrapper, grad_manager
 
-def train(config):
+def train(config, lazy_loading):
     ## config
     dataset_config = config['dataset_config']
     train_config = config['train_config']
@@ -40,7 +40,8 @@ def train(config):
     datasets = {phase: DynDataset(
         dataset_config=dataset_config, 
         material_config=material_config,
-        phase=phase
+        phase=phase,
+        lazy_loading=lazy_loading
     ) for phase in phases}
     
     dataloaders = {phase: DataLoader(
@@ -154,8 +155,9 @@ def train(config):
 if __name__ == "__main__":
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument('--config', type=str, default='config/dynamics/rope.yaml')
+    arg_parser.add_argument('--lazy_loading', action="store_true")
     args = arg_parser.parse_args()
 
     with open(args.config, 'r') as f:
         config = yaml.load(f, Loader=yaml.CLoader)
-    train(config)
+    train(config, args.lazy_loading)

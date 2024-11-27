@@ -13,6 +13,7 @@ class DynDataset(Dataset):
         dataset_config,
         material_config,
         phase='train',
+        lazy_loading=False,
     ):
         assert phase in ['train', 'valid']
         print(f'Loading {phase} dataset...')
@@ -29,6 +30,7 @@ class DynDataset(Dataset):
         self.add_randomness = self.dataset_config['randomness']['use']
         self.state_noise = self.dataset_config['randomness']['state_noise'][self.phase]
         self.phys_noise = self.dataset_config['randomness']['phys_noise'][self.phase]
+        self.lazy_loading = lazy_loading
         
         ## objects info
         self.obj_config = self.dataset_config['datasets']
@@ -57,21 +59,26 @@ class DynDataset(Dataset):
         # load positions and physics parameters
         # eef_pos: (n_epis, T, N_eef, 3)
         # obj_pos: (n_epis, T, N_obj, 3)
-        #self.eef_pos, self.obj_pos = load_positions(dataset_config)
-        #self.pos_dim = self.obj_pos[0].shape[-1]
-
-        # Do lazy loading instead, only load in the particle positions when needed instead of all at once
-        # eef_pos: (T, N_eef, 3)
-        # obj_pos: (T, N_obj, 3)
-        self.positions_paths = get_position_paths(dataset_config)
-        self.eef_pos_0, self.obj_pos_0 = lazy_load_positions(self.positions_paths, 0)
-        self.pos_dim = self.obj_pos_0.shape[-1]
-        print("all particle position paths: ", self.positions_paths)
+        if not lazy_loading:
+            print(f"lazy loading: {lazy_loading}. Loading full dataset into memory...")
+            self.eef_pos, self.obj_pos = load_positions(dataset_config)
+            self.pos_dim = self.obj_pos[0].shape[-1]
+            # get dimensions
+            self.eef_dim = self.eef_pos[0].shape[1]
+        else:
+            # Do lazy loading instead, only load in the particle positions when needed instead of all at once
+            # eef_pos: (T, N_eef, 3)
+            # obj_pos: (T, N_obj, 3)
+            print(f"lazy load: {lazy_loading}. Doing lazy loading...")
+            self.positions_paths = get_position_paths(dataset_config)
+            self.eef_pos_0, self.obj_pos_0 = lazy_load_positions(self.positions_paths, 0)
+            self.pos_dim = self.obj_pos_0.shape[-1]
+            print("all particle position paths: ", self.positions_paths)
+            # get dimensions
+            self.eef_dim = self.eef_pos_0.shape[1]
         
         # get dimensions
         self.obj_dim = self.max_nobj
-        #self.eef_dim = self.eef_pos[0].shape[1]
-        self.eef_dim = self.eef_pos_0.shape[1]
         self.state_dim = self.obj_dim + self.eef_dim
         if self.verbose:
             print(f"object dimension: {self.obj_dim}, eef dimension: {self.eef_dim}.")
@@ -84,10 +91,11 @@ class DynDataset(Dataset):
         pair = self.pair_lists[idx][1:].astype(int)
         assert len(pair) == self.n_his + self.n_future
 
-        # Do lazy loading instead, only load in the particle positions when needed instead of all at once
-        # eef_pos: (T, N_eef, 3)
-        # obj_pos: (T, N_obj, 3)
-        eef_pos, obj_pos = lazy_load_positions(self.positions_paths, episode_idx)
+        if self.lazy_loading:
+            # Do lazy loading instead, only load in the particle positions when needed instead of all at once
+            # eef_pos: (T, N_eef, 3)
+            # obj_pos: (T, N_obj, 3)
+            eef_pos, obj_pos = lazy_load_positions(self.positions_paths, episode_idx)
 
         ## get history keypoints
         obj_kps = []
@@ -95,13 +103,16 @@ class DynDataset(Dataset):
         for i in range(len(pair)):
             frame_idx = pair[i]
             # eef keypoints
-            #eef_kp = self.eef_pos[episode_idx][frame_idx] # (N_eef, 3)
-            eef_kp = eef_pos[frame_idx]
-            eef_kps.append(eef_kp)
-            # object keypoints
-            #obj_kp = self.obj_pos[episode_idx][frame_idx] # (N_obj, 3)
-            obj_kp = obj_pos[frame_idx]
+            if not self.lazy_loading:
+                eef_kp = self.eef_pos[episode_idx][frame_idx] # (N_eef, 3)
+                # object keypoints
+                obj_kp = self.obj_pos[episode_idx][frame_idx] # (N_obj, 3)
+            else:
+                eef_kp = eef_pos[frame_idx]
+                # object keypoints
+                obj_kp = obj_pos[frame_idx]
             obj_kps.append(obj_kp)
+            eef_kps.append(eef_kp)
         
         # obj_kps: (T, N_obj_all, 3)
         # eef_kps: (T, N_eef, 3)

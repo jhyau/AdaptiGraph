@@ -225,7 +225,7 @@ def softbody_scene():
     # softbody stiffness
     #stiffness = np.random.rand()
     #stiffness = 0.99
-    stiffness = np.random.uniform(0.0, 0.07)
+    stiffness = np.random.uniform(0.0, 0.06)
     print(f"softbody stiffness for uniform/homogeneous: {stiffness}")
     if stiffness < 0.5:
         global_stiffness = stiffness * 1e-4 / 0.5
@@ -271,7 +271,7 @@ def softbody_scene():
     collisionDistance = radius * 0.5
 
     # damping: viscous drag force, applies a force proportional and opposite to the particle velocity
-    damping = 1.0
+    damping = 2.0
 
     # ratio of particles (from bottom up) to keep fixed. Set 0 to not have any fixed particles. Usually set to 10 (10%)
     num_fixed_particles = 10

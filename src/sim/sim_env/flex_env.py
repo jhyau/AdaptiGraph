@@ -347,8 +347,8 @@ class FlexEnv(gym.Env):
                 x_increment = (e_2d[0] - s_2d[0]) / 2
                 z_increment = (e_2d[1] - s_2d[1]) / 2
                 print(f"using new poke waypoints, increment: {y_increment}")
-                #way_points = [s_2d, s_2d + [x_increment, z_increment, y_increment], e_2d, e_2d]
-                way_points = [s_2d, s_2d + [x_increment, z_increment, y_increment], e_2d, e_2d, e_2d + [-x_increment, -z_increment, -y_increment], s_2d]
+                way_points = [s_2d, s_2d + [x_increment, z_increment, y_increment], e_2d, e_2d]
+                #way_points = [s_2d, s_2d + [x_increment, z_increment, y_increment], e_2d, e_2d, e_2d + [-x_increment, -z_increment, -y_increment], s_2d]
         self.reset_robot(self.rest_joints)
         print(way_points)
 
@@ -575,7 +575,7 @@ class FlexEnv(gym.Env):
         max_y = np.max(pos_y)
         chosen_points = []
         # no chance to do a surface poke
-        is_surface_poke = False #(np.random.uniform(0.0, 1.0) <= 0.1)
+        is_surface_poke = (np.random.uniform(0.0, 1.0) <= 0.1)
         print(f"choosing a surface-level particle: {is_surface_poke}")
         for idx, (x, y, z) in enumerate(zip(pos_x, pos_y, pos_z)):
             # only choose obj particles that are upper 3rd quadrant of y_coordinates
@@ -591,13 +591,13 @@ class FlexEnv(gym.Env):
                     continue
                 # choose surface points only or also include middle points
                 if is_surface_poke:
-                    if y >= (max_y * 0.95):
+                    #if y >= (max_y * 0.95):
+                    if y < (0.85*max_y):
                         chosen_points.append(idx)
                 else:
                     # any point in the object
                     # want medium to deeper pokes
-                    #if y >= center_y:
-                    if y < (0.9 * max_y):
+                    if y <= center_y:
                         chosen_points.append(idx)
         print(f'chosen points {len(chosen_points)} out of {num_points}.')
         if len(chosen_points) == 0:
