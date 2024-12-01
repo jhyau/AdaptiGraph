@@ -281,7 +281,7 @@ def softbody_scene():
 
     # Load box (actual cube) [0 or 3] or sphere [1] or cylinder[2]
     # ignore cube mesh (rectangular) for now
-    obj_type = 2 #rand_int(0, 4)
+    obj_type = 0 #rand_int(0, 4)
 
     # if cylinder, don't rotate in y direction
     if obj_type == 2:

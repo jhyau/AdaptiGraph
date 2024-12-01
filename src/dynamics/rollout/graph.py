@@ -64,7 +64,8 @@ def visualize_graph(imgs, cam_info,
         part_inv_weight_0=None, physics_param=None, hetero=False):
     
     if colormap is None:
-        colormap = rgb_colormap(repeat=100)
+        #colormap = rgb_colormap(repeat=100)
+        colormap = rgb_colormap(repeat=max_nobj)
     
     if pred_kp_proj_last is None:
         assert gt_kp_proj_last is None
