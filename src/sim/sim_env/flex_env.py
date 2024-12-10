@@ -490,7 +490,7 @@ class FlexEnv(gym.Env):
     def close(self):
         pyflex.clean()
     
-    def sample_action(self, init=False, boundary_points=None, boundary=None):
+    def sample_action(self, init=False, boundary_points=None, boundary=None, physics_params=None):
         if self.obj in ['rope', 'granular']:
             action = self.sample_deform_actions()
             return action
@@ -501,7 +501,7 @@ class FlexEnv(gym.Env):
             # This movement is in the y-coordinate, x and z should be fixed for each action
             print("^^^^^^^^sampling top down poke action^^^^^^^^^")
             self.poke = True
-            action = self.sample_top_down_deform_actions()
+            action = self.sample_top_down_deform_actions(physics_params)
             return action
         elif self.obj in ['multiobj']:
             #print("!!!!!!!!!!!!!!!!!grasping whole obj!!!!!!!!!!!!!!!")
@@ -559,9 +559,10 @@ class FlexEnv(gym.Env):
         
         return action
     
-    def sample_top_down_deform_actions(self):
+    def sample_top_down_deform_actions(self, physics_params):
         ## Have robot poke at the object from top down
         ## Returns a 6-dim vector [x_start, z_start, y_start, x_end, z_end, y_end]
+        ## physics_params: {'particle_radius', 'cluster_radius', 'dynamic_friction', 'cluster_spacing', 'global_stiffness', 'stiffness'}
         # Choose an x,z coordinate (need to slightly change x or z coordinate between start/end), change the y coordinate
         positions = self.get_positions().reshape(-1, 4)
         positions[:, 2] *= -1 # align with the coordinates
@@ -573,10 +574,26 @@ class FlexEnv(gym.Env):
         pos_x, pos_y, pos_z = positions[:, 0], positions[:, 1], positions[:, 2]
         center_x, center_y, center_z = np.median(pos_x), np.median(pos_y), np.median(pos_z)
         max_y = np.max(pos_y)
+        min_y = np.min(pos_y)
+        first_quartile = ((center_y - min_y) / 2) + min_y
+        third_quartile = ((max_y - center_y) / 2) + center_y
         chosen_points = []
-        # no chance to do a surface poke
-        is_surface_poke = (np.random.uniform(0.0, 1.0) <= 0.1)
-        print(f"choosing a surface-level particle: {is_surface_poke}")
+        # Do shallow surface poke for stiffer objects, deeper pokes for softer objects
+        # Basically make the poke distance inversely proportional to stiffness
+        # smaller stiffness --> deeper poke
+        # higher stiffness --> shallower poke
+        stiffness = physics_params['stiffness']
+        #y_threshold = (1.0 - stiffness) * max_y
+        if stiffness > 0.5:
+            # stiffer cubes can do significantly shallower pokes
+            thres = ((1 - stiffness)/2) + stiffness
+            y_threshold = thres * max_y
+        else:
+            y_threshold = stiffness * (max_y - min_y) + min_y
+        print(f"stiffness: {stiffness}, y_threshold: {y_threshold}, min_y: {min_y}, first_quart: {first_quartile}, \
+              center_y: {center_y}, third_quart: {third_quartile}, max: {max_y}")
+        #is_surface_poke = (np.random.uniform(0.0, 1.0) <= 0.1)
+        #print(f"choosing a surface-level particle: {is_surface_poke}")
         for idx, (x, y, z) in enumerate(zip(pos_x, pos_y, pos_z)):
             # only choose obj particles that are upper 3rd quadrant of y_coordinates
             # choose obj particles that are above the table
@@ -584,21 +601,31 @@ class FlexEnv(gym.Env):
             # sample both surface and some penetration points, upper half
             # end effector point is at the top of the stick, not the bottom, so add self.stick_len back
             if np.sqrt((x-center_x)**2 + (y-center_y)**2 + (z-center_z)**2) < 2.0 and y >= self.wkspace_height:
-                # Point cannot be farther down than stick len
-                # the distance from particle to top of the object can't be more than the stick len
-                dist = np.absolute(y - max_y)
-                if dist > self.stick_len:
-                    continue
-                # choose surface points only or also include middle points
-                if is_surface_poke:
-                    #if y >= (max_y * 0.95):
-                    if y < (0.85*max_y):
-                        chosen_points.append(idx)
-                else:
-                    # any point in the object
-                    # want medium to deeper pokes
+                if y_threshold <= center_y:
+                    # This is a softer case, but still don't want pokes that are too deep for tall rectangular objects
+                    #if y <= y_threshold:
+                    #if y <= third_quartile and y >= first_quartile:
                     if y <= center_y:
                         chosen_points.append(idx)
+                else:
+                    # Stiffer case
+                    # Point cannot be farther down than stick len
+                    # the distance from particle to top of the object can't be more than the stick len
+                    dist = np.absolute(y - max_y)
+                    if dist > self.stick_len:
+                        continue
+                    if y >= (stiffness * max_y):
+                        chosen_points.append(idx)
+                # choose surface points only or also include middle points
+                # if is_surface_poke:
+                #     #if y >= (max_y * 0.95):
+                #     if y < (0.85*max_y):
+                #         chosen_points.append(idx)
+                # else:
+                #     # any point in the object
+                #     # want medium to deeper pokes
+                #     if y <= center_y:
+                #         chosen_points.append(idx)
         print(f'chosen points {len(chosen_points)} out of {num_points}.')
         if len(chosen_points) == 0:
             print('no chosen points')

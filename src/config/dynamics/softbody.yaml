@@ -1,13 +1,12 @@
 dataset_config:
   data_name: "softbody"
-  #output_name: "larger-max-nobj-train-epi-20-damping-2-flatboard-softbody-cubes-deeper-poke-and-lift-s-m-e-e-m-s-waypoints"
   #data_folder: "epi-20-damping-2-flatboard-softbody-cubes-deeper-poke-and-lift-s-m-e-e-m-s-waypoints"
-  #output_name: "epi-20-damping-2-flatboard-softbody-cubes-deeper-forward-poke-s-m-e-e-waypoints"
-  #data_folder: "epi-20-damping-2-flatboard-softbody-cubes-deeper-forward-poke-s-m-e-e-waypoints"
   #output_name: "y-trans-x-rot-90-flatboard-softbody-cylinder-damping-2-deep-poke-then-lift-s-m-e-e-m-s-waypoints"
-  #data_folder: "y-trans-x-rot-90-flatboard-softbody-cylinder-damping-2-deep-poke-then-lift-s-m-e-e-m-s-waypoints"
-  output_name: "epi-100-damping-2-flatboard-softbody-cubes-deeper-poke-and-lift-s-m-e-e-m-s-waypoints"
-  data_folder: "epi-100-damping-2-flatboard-softbody-cubes-deeper-poke-and-lift-s-m-e-e-m-s-waypoints"
+  #output_name: "train-50-70-epi-100-damping-2-flatboard-softbody-cubes-deeper-poke-and-lift-s-m-e-e-m-s-waypoints"
+  #data_folder: "epi-100-damping-2-flatboard-softbody-cubes-deeper-poke-and-lift-s-m-e-e-m-s-waypoints"
+  #data_folder: "epi-5-smaller-actual-similar-size-softbody-cubes-flatboard-non-pene-poke-and-lift"
+  data_folder: epi-5-smaller-actual-similar-size-softbody-cubes-flatboard-deeper-poke-and-lift
+  output_name: "overfit-medium-fps-rad-epi-5-smaller-actual-similar-size-softbody-cubes-flatboard-deeper-poke-and-lift"
   materials: ["softbody"]
   #data_dir: "../sim_data" # data directory
   data_dir: "/media/motion/Elements/adaptigraph/sim_data"
@@ -27,7 +26,7 @@ dataset_config:
     train: [0, 0.98]
     valid: [0.98, 1]
     #train: [0, 0]
-    #valid: [0, 0.98]
+    #valid: [0, 1.0]
 
   eef:
     #max_neef: 1
@@ -49,12 +48,13 @@ dataset_config:
   datasets:
     - name: 'softbody'
       max_nobj: 300
-      max_nR: 4500 #1000
+      max_nR: 3500 #1000
       #fps_radius_range: [0.18, 0.22]
+      fps_radius_range: [0.20, 0.24]
       adj_radius_range: [0.48, 0.52]
       topk: 10
       #connect_tool_all: False
-      fps_radius_range: [0.24, 0.26]
+      #fps_radius_range: [0.24, 0.26]
       #adj_radius_range: [0.74, 0.76]
       #topk: 5
       #connect_tool_all: False

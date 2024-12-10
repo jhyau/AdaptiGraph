@@ -217,32 +217,39 @@ def softbody_scene():
 
     # make sure object isn't too large. or else you'd need to modify the number of max particles and the cluster radius
     # otherwise particles will be too spread apart to form edges
-    s_scale = rand_int(10, 25)
+    #s_scale = rand_int(10, 25)
+    s_scale = 12 # smaller cube sizes
     # allow greater variance for height, but don't allow anything beyond 80
-    scale = np.array([rand_float(2.0, 3.0), rand_float(1.0, 3.5), rand_float(2.0, 3.0)]) * s_scale #* 50
+    # y scale: rand_float(1.0, 3.5)
+    # x and z scale: rand_float(2.0, 3.0)
+    scale = np.array([rand_float(2.0, 2.5), rand_float(2.1, 3.0), rand_float(2.0, 2.5)]) * s_scale #* 50
     print(f"softbody scale: {scale} with s_scale: {s_scale}")
     
     # softbody stiffness
     #stiffness = np.random.rand()
-    #stiffness = 0.99
+    #stiffness = np.random.uniform(0.5, 1.0)
+    # For no penetration, max global stiffness is 0.000012, cluster spacing 2.48
     stiffness = np.random.uniform(0.0, 0.06)
     print(f"softbody stiffness for uniform/homogeneous: {stiffness}")
     if stiffness < 0.5:
         global_stiffness = stiffness * 1e-4 / 0.5
         cluster_spacing = 2 + 8 * stiffness
+        #global_stiffness = stiffness * 1e-4
+        #cluster_spacing = 2 + 8 * stiffness
     else:
-        global_stiffness = (stiffness - 0.5) * 4e-4 + 1e-4
+        #global_stiffness = (stiffness - 0.5) * 4e-4 + 1e-4
+        global_stiffness = stiffness * 4e-4 + 1e-4
         cluster_spacing = 6 + 4 * (stiffness - 0.5)
     
     # For very soft cases, don't want the cube to be too tall
-    if stiffness < 0.1:
-        base_area = scale[0] * scale[2]
-        longer_side = np.max(scale)
-        tall_area = longer_side * scale[1]
-        if tall_area > 2*base_area:
-            s_scale = rand_int(10, 20)
-            scale = np.array([rand_float(2.0, 3.0), rand_float(1.0, 3.5), rand_float(2.0, 3.0)]) * s_scale #* 50
-            print(f"!!!!!!!!!!!!!!!!!!!!very soft, resetting softbody scale: {scale} with s_scale: {s_scale}")
+    # if stiffness < 0.1:
+    #     base_area = scale[0] * scale[2]
+    #     longer_side = np.max(scale)
+    #     tall_area = longer_side * scale[1]
+    #     if tall_area > 2*base_area:
+    #         s_scale = rand_int(10, 20)
+    #         scale = np.array([rand_float(2.0, 3.0), rand_float(1.0, 3.5), rand_float(2.0, 3.0)]) * s_scale #* 50
+    #         print(f"!!!!!!!!!!!!!!!!!!!!very soft, resetting softbody scale: {scale} with s_scale: {s_scale}")
     
     # softbody frtction
     dynamicFriction = 0.1

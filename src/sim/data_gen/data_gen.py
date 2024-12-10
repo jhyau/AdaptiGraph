@@ -85,19 +85,20 @@ def gen_data(info):
                     u, boundary_points, boundary = env.sample_action(init=True)
                 else:
                     u, boundary_points, boundary = env.sample_action(boundary_points=boundary_points, boundary=boundary)
-            # elif obj in ["softbody"]:
-            #     if action_type is not None and action_type == "poke":
-            #         print(f"poking")
-            #         u = env.sample_action()
-            #         action_type = "lift"
-            #         prev_u = u
-            #     elif action_type is not None and action_type == "lift":
-            #         # set prev_u but reversed so the end is now start and start is end
-            #         print(f"lifting")
-            #         u = np.concatenate([prev_u[3:], prev_u[:3]])
-            #         action_type = "poke"
-            #     else:
-            #         raise Exception("For softbody, need action_type")
+            elif obj in ["softbody"]:
+                u = env.sample_action(physics_params=physics_params)
+                # if action_type is not None and action_type == "poke":
+                #     print(f"poking")
+                #     u = env.sample_action()
+                #     action_type = "lift"
+                #     prev_u = u
+                # elif action_type is not None and action_type == "lift":
+                #     # set prev_u but reversed so the end is now start and start is end
+                #     print(f"lifting")
+                #     u = np.concatenate([prev_u[3:], prev_u[:3]])
+                #     action_type = "poke"
+                # else:
+                #     raise Exception("For softbody, need action_type")
             else:
                 u = env.sample_action() # [x_start, z_start, x_end, z_end]
                 # hard set the start and end to be a specific action
