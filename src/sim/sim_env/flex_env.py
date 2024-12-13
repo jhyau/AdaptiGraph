@@ -587,7 +587,7 @@ class FlexEnv(gym.Env):
         if stiffness > 0.5:
             # stiffer cubes can do significantly shallower pokes
             thres = ((1 - stiffness)/2) + stiffness
-            y_threshold = thres * max_y
+            y_threshold = max_y #thres * max_y
         else:
             y_threshold = stiffness * (max_y - min_y) + min_y
         print(f"stiffness: {stiffness}, y_threshold: {y_threshold}, min_y: {min_y}, first_quart: {first_quartile}, \
@@ -614,7 +614,11 @@ class FlexEnv(gym.Env):
                     dist = np.absolute(y - max_y)
                     if dist > self.stick_len:
                         continue
-                    if y >= (stiffness * max_y):
+                    quart = (max_y - min_y) / 25
+                    fives = (max_y - min_y) / 20
+                    if y <= (max_y - quart) and y >= (max_y - fives):
+                    #if y <= (max_y - fives) and y >= center_y:
+                    #if y <= center_y:
                         chosen_points.append(idx)
                 # choose surface points only or also include middle points
                 # if is_surface_poke:
