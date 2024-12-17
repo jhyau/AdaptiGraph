@@ -8,7 +8,7 @@ dataset_config:
   #data_folder: "increase-cluster-rad-decrease-cluster-space-small-softbody-cubes-flatboard-poke-and-lift"
   #output_name: "increase-cluster-rad-decrease-cluster-space-small-softbody-cubes-flatboard-poke-and-lift"
   data_folder: "epi-5-smaller-actual-similar-size-softbody-cubes-flatboard-deeper-poke-and-lift"
-  output_name: "overfit-medium-fps-rad-epi-5-smaller-actual-similar-size-softbody-cubes-flatboard-deeper-poke-and-lift"
+  output_name: "TEMP-pstep-4-train-overfit-try-connect-tool-surface-0-8-check-dis-medium-fps-rad-epi-5-smaller-actual-similar-size-softbody-cubes-flatboard-deeper-poke-and-lift"
   materials: ["softbody"]
   #data_dir: "../sim_data" # data directory
   data_dir: "/media/motion/Elements/adaptigraph/sim_data"
@@ -28,7 +28,7 @@ dataset_config:
     #train: [0, 0.98]
     #valid: [0.98, 1]
     train: [0, 0]
-    valid: [0, 1.0]
+    valid: [0, 0.98]
 
   eef:
     #max_neef: 1

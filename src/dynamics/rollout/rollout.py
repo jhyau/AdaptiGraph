@@ -110,6 +110,7 @@ def rollout_from_start_graph(graph, fps_idx_list, dataset_config, material_confi
             else:
                 part_2_obj_inst_vis = None
             print(f"obj_kp_num: {obj_kp_num}, obj_kp shape: {obj_kp.shape}, obj_kp_vis shape: {obj_kp_vis.shape}")
+            max_y = np.max(obj_kp_vis[:,1]) * 0.8
             
             if part_inv_weight_0 is not None:
                 part_inv_weight_0_vis = part_inv_weight_0[current_end][fps_idx_list]
@@ -142,7 +143,8 @@ def rollout_from_start_graph(graph, fps_idx_list, dataset_config, material_confi
             Rr, Rs = construct_edges_from_states(torch.tensor(states), adj_thresh,
                                                  mask=graph['state_mask'][0],
                                                  tool_mask=graph['eef_mask'][0],
-                                                 topk=topk, connect_tools_all=connect_tool_all)
+                                                 topk=topk, connect_tools_all=connect_tool_all,
+                                                 max_y=max_y)
             print(f"max_nR: {max_nR}, Rr size: {Rr.size()}, Rs size: {Rs.size()}")
             Rr = pad_torch(Rr, max_nR)
             Rs = pad_torch(Rs, max_nR)

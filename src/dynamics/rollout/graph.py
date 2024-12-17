@@ -393,12 +393,14 @@ def construct_graph(dataset_config, material_config, eef_pos, obj_pos,
     
     ## load history states
     # state_history: (n_his, N_obj + N_eef, 3)
+    max_y = 0
     state_history = np.zeros((n_his, state_dim, pos_dim), dtype=np.float32)
     for fi in range(n_his):
         obj_kp_his = fps_obj_kps[fi] # (N_obj, 3)
+        max_y = np.max(obj_kp_his[:,1])
         eef_kp_his = eef_kps[fi] # (N_eef, 3)
         state_history[fi] = np.concatenate([obj_kp_his, eef_kp_his], axis=0)
-    
+    max_y = max_y * 0.8
     ## load masks
     # state_mask: (N_obj + N_eef, )
     # eef_mask: (N_obj + N_eef, )
@@ -447,7 +449,7 @@ def construct_graph(dataset_config, material_config, eef_pos, obj_pos,
 
     # construct relations (density as hyperparameter)
     Rr, Rs = construct_edges_from_states(state_history[-1], adj_thresh, state_mask, eef_mask,
-                                         topk, connect_tool_all)
+                                         topk, connect_tool_all, max_y=max_y)
     Rr = pad_torch(Rr, max_nR)
     Rs = pad_torch(Rs, max_nR)
 

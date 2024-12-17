@@ -35,7 +35,9 @@ def fps(obj_kp_start, max_nobj, fps_radius_range, verbose=False):
         
         return fps_idx_list
 
-def construct_edges_from_states(states, adj_thresh, mask, tool_mask, topk=10, connect_tools_all=False):
+def construct_edges_from_states(states, adj_thresh, mask, tool_mask, topk=10, connect_tools_all=False, 
+                                max_y=None,
+                                connect_tools_surface=True):
     # :param states: (N, state_dim) torch tensor
     # :param adj_thresh: float
     # :param mask: (N) torch tensor, true when index is a valid particle
@@ -43,9 +45,10 @@ def construct_edges_from_states(states, adj_thresh, mask, tool_mask, topk=10, co
     # :return:
     # - Rr: (n_rel, N) torch tensor
     # - Rs: (n_rel, N) torch tensor
+    # N = max_nobj + n_eef
 
     N, state_dim = states.shape
-    s_receiv = states[:, None, :].repeat(1, N, 1)
+    s_receiv = states[:, None, :].repeat(1, N, 1) #(N, N, state_dim)
     s_sender = states[None, :, :].repeat(N, 1, 1)
 
     # dis: particle_num x particle_num
@@ -64,8 +67,12 @@ def construct_edges_from_states(states, adj_thresh, mask, tool_mask, topk=10, co
 
     obj_tool_mask_1 = tool_mask_1 * mask_2  # particle sender, tool receiver
     obj_tool_mask_2 = tool_mask_2 * mask_1  # particle receiver, tool sender
-
+        
     adj_matrix = ((dis - threshold) < 0).float()
+    # print(f"shape of adjacency matrix: {adj_matrix.size()}")
+    # print(f"shape of dis: {dis.size()}")
+    # print(f"shape of s_receiv: {s_receiv.size()}")
+    # print(f"s_receiv: \n{s_receiv}")
 
     # add topk constraints
     topk = min(dis.shape[-1], topk)
@@ -78,6 +85,43 @@ def construct_edges_from_states(states, adj_thresh, mask, tool_mask, topk=10, co
         adj_matrix[obj_tool_mask_1] = 0
         adj_matrix[obj_tool_mask_2] = 1
         adj_matrix[tool_mask_12] = 0  # avoid tool to tool relations
+        # print(f"after connect_tools_all: \n{adj_matrix}")
+    
+    if connect_tools_surface and max_y is not None:
+        # Only attach tool when there is at least one connection between object and tool particles based on distance threshold
+        # print(tool_mask_1.is_cuda)
+        # print(tool_mask_2.is_cuda)
+        # print(mask_1.is_cuda)
+        # print(s_receiv.is_cuda)
+        # print((s_receiv[:,:,1] >= max_y).is_cuda)
+        print(f"max_y: {max_y}")
+        dev_idx = adj_matrix.get_device()
+        adj_tool_sender = adj_matrix[obj_tool_mask_2.to("cpu")]
+        check = torch.sum(adj_tool_sender)
+        # if dev_idx > 0:
+        #     check = torch.sum(adj_matrix.to(dev_idx)[obj_tool_mask_2])
+        # else:
+        #     check = torch.sum(adj_matrix.to("cpu").detach()[obj_tool_mask_2])
+        print(f"check: {check}")
+        if check > 0:
+            dev = mask_1.get_device()
+            if dev >= 0:
+                surface_mask_receive = (s_receiv[:,:,1] >= max_y).to(dev) * mask_1
+                surface_mask_send = (s_sender[:,:,1] >= max_y).to(dev) * mask_2
+            else:
+                surface_mask_receive = (s_receiv[:,:,1] >= max_y) * mask_1
+                surface_mask_send = (s_sender[:,:,1] >= max_y) * mask_2
+            surf_obj_tool_mask_1 = tool_mask_1 * surface_mask_send  # particle sender, tool receiver
+            surf_obj_tool_mask_2 = tool_mask_2 * surface_mask_receive  # particle receiver, tool sender
+            print(f"obj_tool_mask1 shape: {obj_tool_mask_1.size()}")
+            print(f"obj_tool_mask2 shape: {obj_tool_mask_2.size()}")
+            print(f"obj_tool_mask1 true: {torch.sum(obj_tool_mask_1)}")
+            print(f"obj_tool_mask2 true: {torch.sum(obj_tool_mask_2)}")
+            print(f"surf_obj_tool_mask_1 true: {torch.sum(surf_obj_tool_mask_1)}")
+            print(f"surf_obj_tool_mask_2 true: {torch.sum(surf_obj_tool_mask_2)}")
+            adj_matrix[surf_obj_tool_mask_1] = 0
+            adj_matrix[surf_obj_tool_mask_2] = 1
+            adj_matrix[tool_mask_12] = 0  # avoid tool to tool relations
 
     n_rels = adj_matrix.sum().long().item()
     rels_idx = torch.arange(n_rels).to(device=states.device, dtype=torch.long)
