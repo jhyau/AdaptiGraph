@@ -37,7 +37,7 @@ def fps(obj_kp_start, max_nobj, fps_radius_range, verbose=False):
 
 def construct_edges_from_states(states, adj_thresh, mask, tool_mask, topk=10, connect_tools_all=False, 
                                 max_y=None,
-                                connect_tools_surface=True):
+                                connect_tools_surface=False):
     # :param states: (N, state_dim) torch tensor
     # :param adj_thresh: float
     # :param mask: (N) torch tensor, true when index is a valid particle
@@ -95,7 +95,6 @@ def construct_edges_from_states(states, adj_thresh, mask, tool_mask, topk=10, co
         # print(s_receiv.is_cuda)
         # print((s_receiv[:,:,1] >= max_y).is_cuda)
         print(f"max_y: {max_y}")
-        dev_idx = adj_matrix.get_device()
         adj_tool_sender = adj_matrix[obj_tool_mask_2.to("cpu")]
         check = torch.sum(adj_tool_sender)
         # if dev_idx > 0:

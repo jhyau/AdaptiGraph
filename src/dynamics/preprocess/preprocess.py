@@ -102,9 +102,9 @@ def extract_push(eef, dist_thresh, n_his, n_future, n_frames):
         fi = fj
         while fi >= start_frame:
             eef_fi = eef[fi]
-            x_curr, z_curr = eef_curr[0], eef_curr[2]
-            x_fi, z_fi = eef_fi[0], eef_fi[2]
-            dist_curr = np.sqrt((x_curr - x_fi) ** 2 + (z_curr - z_fi) ** 2)
+            x_curr, y_curr, z_curr = eef_curr[0], eef_curr[1], eef_curr[2] #x, z only before. also take y into account
+            x_fi, y_fi, z_fi = eef_fi[0], eef_fi[1], eef_fi[2]
+            dist_curr = np.sqrt((x_curr - x_fi) ** 2 + (z_curr - z_fi) ** 2 + (y_curr - y_fi) ** 2)
             if dist_curr >= dist_thresh:
                 frame_traj.append(fi)
                 eef_curr = eef_fi
@@ -121,9 +121,9 @@ def extract_push(eef, dist_thresh, n_his, n_future, n_frames):
         fi = fj
         while fi < end_frame:
             eef_fi = eef[fi]
-            x_curr, z_curr = eef_curr[0], eef_curr[2]
-            x_fi, z_fi = eef_fi[0], eef_fi[2]
-            dist_curr = np.sqrt((x_curr - x_fi) ** 2 + (z_curr - z_fi) ** 2)
+            x_curr, y_curr, z_curr = eef_curr[0], eef_curr[1], eef_curr[2]
+            x_fi, y_fi, z_fi = eef_fi[0], eef_fi[1], eef_fi[2]
+            dist_curr = np.sqrt((x_curr - x_fi) ** 2 + (z_curr - z_fi) ** 2 + (y_curr - y_fi) ** 2)
             if dist_curr >= dist_thresh:
                 frame_traj.append(fi)
                 eef_curr = eef_fi
