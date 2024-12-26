@@ -37,7 +37,7 @@ def fps(obj_kp_start, max_nobj, fps_radius_range, verbose=False):
 
 def construct_edges_from_states(states, adj_thresh, mask, tool_mask, topk=10, connect_tools_all=False, 
                                 max_y=None,
-                                connect_tools_surface=False):
+                                connect_tools_surface=True):
     # :param states: (N, state_dim) torch tensor
     # :param adj_thresh: float
     # :param mask: (N) torch tensor, true when index is a valid particle
@@ -69,7 +69,8 @@ def construct_edges_from_states(states, adj_thresh, mask, tool_mask, topk=10, co
     obj_tool_mask_2 = tool_mask_2 * mask_1  # particle receiver, tool sender
         
     adj_matrix = ((dis - threshold) < 0).float()
-    # print(f"shape of adjacency matrix: {adj_matrix.size()}")
+    print(f"shape of adjacency matrix: {adj_matrix.size()}")
+    print(f"unique elems in adj: {torch.unique(adj_matrix)}")
     # print(f"shape of dis: {dis.size()}")
     # print(f"shape of s_receiv: {s_receiv.size()}")
     # print(f"s_receiv: \n{s_receiv}")
@@ -80,6 +81,8 @@ def construct_edges_from_states(states, adj_thresh, mask, tool_mask, topk=10, co
     topk_matrix = torch.zeros_like(adj_matrix)
     topk_matrix.scatter_(-1, topk_idx, 1)
     adj_matrix = adj_matrix * topk_matrix
+    print(f"after topk shape of adjacency matrix: {adj_matrix.size()}")
+    print(f"after topk unique elems in adj: {torch.unique(adj_matrix)}")
 
     if connect_tools_all:
         adj_matrix[obj_tool_mask_1] = 0
@@ -121,10 +124,13 @@ def construct_edges_from_states(states, adj_thresh, mask, tool_mask, topk=10, co
             adj_matrix[surf_obj_tool_mask_1] = 0
             adj_matrix[surf_obj_tool_mask_2] = 1
             adj_matrix[tool_mask_12] = 0  # avoid tool to tool relations
+            print(f"after connect tool surface shape of adjacency matrix: {adj_matrix.size()}")
+            print(f"after connect tool surface unique elems in adj: {torch.unique(adj_matrix)}")
 
     n_rels = adj_matrix.sum().long().item()
     rels_idx = torch.arange(n_rels).to(device=states.device, dtype=torch.long)
     rels = adj_matrix.nonzero()
+    print(f"n_rels: {n_rels}, rels shape: {rels.size()}")
     Rr = torch.zeros((n_rels, N), device=states.device, dtype=states.dtype)
     Rs = torch.zeros((n_rels, N), device=states.device, dtype=states.dtype)
     Rr[rels_idx, rels[:, 0]] = 1

@@ -101,6 +101,9 @@ def visualize_graph(imgs, cam_info,
     img = img_orig.copy()
     print(f"num images: {img_orig.shape}")
 
+    # save predicted obj key point particle postions
+    #np.save(os.path.join(save_dir, f'{start:06}_{end:06}_pred.npy'), kp_vis)
+
     # transform keypoints
     obj_kp_homo = np.concatenate([kp_vis, np.ones((kp_vis.shape[0], 1))], axis=1) # (N, 4)
     obj_kp_homo = obj_kp_homo @ extr.T  # (N, 4)
@@ -115,6 +118,9 @@ def visualize_graph(imgs, cam_info,
     obj_kp_proj[:, 1] = obj_kp_homo[:, 1] * fy / obj_kp_homo[:, 2] + cy
     
     pred_kp_proj_list.append(obj_kp_proj)
+
+    # save tool particle postions
+    #np.save(os.path.join(save_dir, f'{start:06}_{end:06}_tool.npy'), eef_kp[0])
 
     # also transform tool keypoints
     tool_kp_start = eef_kp[0]
@@ -199,6 +205,10 @@ def visualize_graph(imgs, cam_info,
                                     int(colormap[k, 2]), int(colormap[k, 1]), 
                                     int(colormap[k, 0]), vis_t])
 
+    # save edges between particles
+    #np.save(os.path.join(save_dir, f'{start:06}_{end:06}_receiver_edges.npy'), Rr)
+    #np.save(os.path.join(save_dir, f'{start:06}_{end:06}_sender_edges.npy'), Rs)
+
     # visualize edges
     for k in range(Rr.shape[0]):
         if Rr[k].sum() == 0: continue
@@ -229,6 +239,9 @@ def visualize_graph(imgs, cam_info,
     cv2.addWeighted(img_overlay, line_alpha, img, 1 - line_alpha, 0, img)
     cv2.imwrite(os.path.join(save_dir, f'{start:06}_{end:06}_pred.jpg'), img)
     img_pred = img.copy()
+
+    # save gt object particle postions
+    #np.save(os.path.join(save_dir, f'{start:06}_{end:06}_gt.npy'), gt_kp_vis)
 
     # visualize gt similarly
     img = img_orig.copy()
@@ -335,6 +348,13 @@ def construct_graph(dataset_config, material_config, eef_pos, obj_pos,
     adj_thresh = (dataset['adj_radius_range'][0] + dataset['adj_radius_range'][1]) / 2
     topk = dataset['topk']
     connect_tool_all = dataset['connect_tool_all']
+    if "connect_tool_surface" in dataset:
+        connect_tool_surface = dataset['connect_tool_surface']
+        connect_tool_surface_ratio = dataset['connect_tool_surface_ratio']
+        print(f"connecting tool to surface: {connect_tool_surface}, surface ratio: {connect_tool_surface_ratio}")
+    else:
+        connect_tool_surface = False
+        connect_tool_surface_ratio = 1.0
     
     eef_dim = eef_pos.shape[1]
     obj_dim = max_nobj
@@ -400,7 +420,7 @@ def construct_graph(dataset_config, material_config, eef_pos, obj_pos,
         max_y = np.max(obj_kp_his[:,1])
         eef_kp_his = eef_kps[fi] # (N_eef, 3)
         state_history[fi] = np.concatenate([obj_kp_his, eef_kp_his], axis=0)
-    max_y = max_y * 0.8
+    max_y = max_y * connect_tool_surface_ratio #0.8
     ## load masks
     # state_mask: (N_obj + N_eef, )
     # eef_mask: (N_obj + N_eef, )
@@ -449,7 +469,7 @@ def construct_graph(dataset_config, material_config, eef_pos, obj_pos,
 
     # construct relations (density as hyperparameter)
     Rr, Rs = construct_edges_from_states(state_history[-1], adj_thresh, state_mask, eef_mask,
-                                         topk, connect_tool_all, max_y=max_y)
+                                         topk, connect_tool_all, max_y=max_y, connect_tools_surface=connect_tool_surface)
     Rr = pad_torch(Rr, max_nR)
     Rs = pad_torch(Rs, max_nR)
 

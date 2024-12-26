@@ -34,6 +34,13 @@ def rollout_from_start_graph(graph, fps_idx_list, dataset_config, material_confi
     adj_thresh = (dataset['adj_radius_range'][0] + dataset['adj_radius_range'][1]) / 2
     topk = dataset['topk']
     connect_tool_all = dataset['connect_tool_all']
+    if "connect_tool_surface" in dataset:
+        connect_tool_surface = dataset['connect_tool_surface']
+        connect_tool_surface_ratio = dataset['connect_tool_surface_ratio']
+        print(f"connecting tool to surface: {connect_tool_surface}, surface ratio: {connect_tool_surface_ratio}")
+    else:
+        connect_tool_surface = False
+        connect_tool_surface_ratio = 1.0
     
     n_his = dataset_config['n_his']
     n_frames = obj_pos.shape[0]
@@ -110,7 +117,7 @@ def rollout_from_start_graph(graph, fps_idx_list, dataset_config, material_confi
             else:
                 part_2_obj_inst_vis = None
             print(f"obj_kp_num: {obj_kp_num}, obj_kp shape: {obj_kp.shape}, obj_kp_vis shape: {obj_kp_vis.shape}")
-            max_y = np.max(obj_kp_vis[:,1]) * 0.8
+            max_y = np.max(obj_kp_vis[:,1]) * connect_tool_surface_ratio #0.8
             
             if part_inv_weight_0 is not None:
                 part_inv_weight_0_vis = part_inv_weight_0[current_end][fps_idx_list]
@@ -144,7 +151,8 @@ def rollout_from_start_graph(graph, fps_idx_list, dataset_config, material_confi
                                                  mask=graph['state_mask'][0],
                                                  tool_mask=graph['eef_mask'][0],
                                                  topk=topk, connect_tools_all=connect_tool_all,
-                                                 max_y=max_y)
+                                                 max_y=max_y,
+                                                 connect_tools_surface=connect_tool_surface)
             print(f"max_nR: {max_nR}, Rr size: {Rr.size()}, Rs size: {Rs.size()}")
             Rr = pad_torch(Rr, max_nR)
             Rs = pad_torch(Rs, max_nR)

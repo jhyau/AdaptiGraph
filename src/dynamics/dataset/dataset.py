@@ -44,6 +44,13 @@ class DynDataset(Dataset):
         self.adj_radius_range = self.dataset['adj_radius_range']
         self.topk = self.dataset['topk']
         self.connect_tool_all = self.dataset['connect_tool_all']
+        if "connect_tool_surface" in self.dataset:
+            self.connect_tool_surface = self.dataset['connect_tool_surface']
+            self.connect_tool_surface_ratio = self.dataset['connect_tool_surface_ratio']
+            print(f"connecting tool to surface: {self.connect_tool_surface}, surface ratio: {self.connect_tool_surface_ratio}")
+        else:
+            self.connect_tool_surface = False
+            self.connect_tool_surface_ratio = 1.0
         
         # load data pairs, all object particles and determined by eef delta position
         # pair_list: (T, 8), [episode_idx (0), pair (1:8)]
@@ -149,7 +156,7 @@ class DynDataset(Dataset):
             state_history[fi] = np.concatenate([obj_kp_his, eef_kp_his], axis=0)
         if self.verbose:
             print(f"history states: {state_history.shape}.")
-        max_y = max_y * 0.8
+        max_y = max_y * self.connect_tool_surface_ratio #0.8
 
         ## load future states
         # future objects: (n_future, N_obj, 3)
@@ -245,7 +252,8 @@ class DynDataset(Dataset):
         # Rr, Rs: (n_rel, N)
         adj_thresh = np.random.uniform(*self.adj_radius_range)
         Rr, Rs = construct_edges_from_states(state_history[-1], adj_thresh, state_mask, eef_mask, 
-                                             self.topk, self.connect_tool_all, max_y=max_y)
+                                             self.topk, self.connect_tool_all, max_y=max_y,
+                                             connect_tools_surface=self.connect_tool_surface)
         Rr = pad_torch(Rr, self.max_nR)
         Rs = pad_torch(Rs, self.max_nR)
         
