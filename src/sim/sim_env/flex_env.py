@@ -577,6 +577,7 @@ class FlexEnv(gym.Env):
         min_y = np.min(pos_y)
         first_quartile = ((center_y - min_y) / 2) + min_y
         third_quartile = ((max_y - center_y) / 2) + center_y
+        eighth = ((first_quartile - min_y) / 2) + min_y
         chosen_points = []
         # Do shallow surface poke for stiffer objects, deeper pokes for softer objects
         # Basically make the poke distance inversely proportional to stiffness
@@ -591,7 +592,12 @@ class FlexEnv(gym.Env):
         else:
             y_threshold = stiffness * (max_y - min_y) + min_y
         print(f"stiffness: {stiffness}, y_threshold: {y_threshold}, min_y: {min_y}, first_quart: {first_quartile}, \
-              center_y: {center_y}, third_quart: {third_quartile}, max: {max_y}")
+              center_y: {center_y}, third_quart: {third_quartile}, max: {max_y}, eighth: {eighth}")
+        # calculate surface area
+        x_length = np.max(pos_x) - np.min(pos_x)
+        z_length = np.max(pos_z) - np.min(pos_z)
+        surface_area = x_length * z_length
+        print(f"$$$$$$$$$$$$$$$surface area: {surface_area}")
         #is_surface_poke = (np.random.uniform(0.0, 1.0) <= 0.1)
         #print(f"choosing a surface-level particle: {is_surface_poke}")
         for idx, (x, y, z) in enumerate(zip(pos_x, pos_y, pos_z)):
@@ -603,9 +609,12 @@ class FlexEnv(gym.Env):
             if np.sqrt((x-center_x)**2 + (y-center_y)**2 + (z-center_z)**2) < 2.0 and y >= self.wkspace_height:
                 if y_threshold <= center_y:
                     # This is a softer case, but still don't want pokes that are too deep for tall rectangular objects
+                    # Note that the particles that have inf weight are the bottom 10% y coordinate particles
+                    # For cubes with larger surface area (bigger cubes) slightly reduce depth of poke
                     #if y <= y_threshold:
-                    #if y <= third_quartile and y >= first_quartile:
-                    if y <= center_y:
+                    #if y <= third_quartile and y >= eighth:
+                    if y <= third_quartile and y >= first_quartile:
+                    #if y <= center_y:
                         chosen_points.append(idx)
                 else:
                     # Stiffer case

@@ -212,13 +212,10 @@ def softbody_scene():
     print(f"softbody trans: {trans}")
         
     # softbody scale
-    #edge_length = rand_float(1.0, 3.0)
-    #rope_thickness = 3.0
-
     # make sure object isn't too large. or else you'd need to modify the number of max particles and the cluster radius
     # otherwise particles will be too spread apart to form edges
     #s_scale = rand_int(10, 25)
-    s_scale = 12 # smaller cube sizes: 12 with radius 0.05
+    s_scale = 18 # smaller cube sizes: 12 with radius 0.05
     # allow greater variance for height, but don't allow anything beyond 80
     # y scale: rand_float(1.0, 3.5)
     # x and z scale: rand_float(2.0, 3.0)
@@ -227,9 +224,9 @@ def softbody_scene():
     
     # softbody stiffness
     #stiffness = np.random.rand()
-    stiffness = 0.99 #np.random.uniform(0.5, 1.0)
+    #stiffness = 0.99 #np.random.uniform(0.5, 1.0)
     # For no penetration, max global stiffness is 0.000012, cluster spacing 2.48
-    #stiffness = np.random.uniform(0.0, 0.06)
+    stiffness = np.random.uniform(0.0, 0.06)
     print(f"softbody stiffness for uniform/homogeneous: {stiffness}")
     if stiffness < 0.5:
         global_stiffness = stiffness * 1e-4 / 0.5
@@ -256,14 +253,14 @@ def softbody_scene():
     dynamicFriction = 0.1
     
     # others (usually fixed)
-    cluster_radius = 1.0 #0.
+    cluster_radius = 0.
     cluster_stiffness = 1.0 #0.55
 
-    link_radius = 0.06 #0. 
+    link_radius = 0. 
     link_stiffness = 1.
 
     surface_sampling = 0.0 #0.
-    volume_sampling = 5.0 #4.
+    volume_sampling = 4.0 #4.
 
     skinning_falloff = 5.
     skinning_max_dist = 100.
@@ -294,7 +291,6 @@ def softbody_scene():
     # if cylinder, don't rotate in y direction
     if obj_type == 2:
         # no rotation for cylinder
-        #x_rotation = 45.
         z_rotation = 90. #rand_float(10, 20)
         x_rotation = 90. 
         y_rotation = 90.
