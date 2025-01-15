@@ -215,12 +215,14 @@ def softbody_scene():
     # make sure object isn't too large. or else you'd need to modify the number of max particles and the cluster radius
     # otherwise particles will be too spread apart to form edges
     #s_scale = rand_int(10, 25)
-    s_scale = 18 # smaller cube sizes: 12 with radius 0.05
+    s_scale = 18 # smaller cube sizes: 12 with radius 0.05, y scale up to 18
+    x_z_scale = 10
+    y_scale = 18
     # allow greater variance for height, but don't allow anything beyond 80
-    # y scale: rand_float(1.0, 3.5)
-    # x and z scale: rand_float(2.0, 3.0)
-    scale = np.array([rand_float(2.0, 2.5), rand_float(2.1, 3.0), rand_float(2.0, 2.5)]) * s_scale #* 50
-    print(f"softbody scale: {scale} with s_scale: {s_scale}")
+    # surface area of the xz plane needs to be smaller to avoid having the flatboard push get snagged on the corner
+    #scale = np.array([rand_float(2.0, 2.5), rand_float(2.1, 3.0), rand_float(2.0, 2.5)]) * s_scale #* 50
+    scale = np.array([rand_float(2.0, 2.5) * x_z_scale, rand_float(2.1, 3.0) * y_scale, rand_float(2.0, 2.5) * x_z_scale])
+    print(f"softbody scale: {scale} with x_z_scale: {x_z_scale}, y_scale: {y_scale}, s_scale: {s_scale}")
     
     # softbody stiffness
     #stiffness = np.random.rand()

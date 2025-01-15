@@ -498,10 +498,17 @@ class FlexEnv(gym.Env):
             action, boundary_points, boundary = self.sample_grasp_actions_corner(init, boundary_points, boundary)
             return action, boundary_points, boundary
         elif self.obj in ['softbody']:
-            # This movement is in the y-coordinate, x and z should be fixed for each action
-            print("^^^^^^^^sampling top down poke action^^^^^^^^^")
-            self.poke = True
-            action = self.sample_top_down_deform_actions(physics_params)
+            ## Choose between vertical poke or horizontal push
+            # TODO: For stiff cubes, do horizontal push
+            act = np.random.rand()
+            if physics_params['stiffness'] >= 0.0 and act >= 0.0:
+                print(f"=========sampling horizontal push action===========")
+                action = self.sample_horizontal_deform_actions(physics_params)
+            else:
+                print("^^^^^^^^sampling top down poke action^^^^^^^^^")
+                # This movement is in the y-coordinate, x and z should be fixed for each action
+                self.poke = True
+                action = self.sample_top_down_deform_actions(physics_params)
             return action
         elif self.obj in ['multiobj']:
             #print("!!!!!!!!!!!!!!!!!grasping whole obj!!!!!!!!!!!!!!!")
@@ -559,6 +566,139 @@ class FlexEnv(gym.Env):
         
         return action
     
+    def sample_horizontal_deform_actions(self, physics_params):
+        ## Have robot push at object horizontal along x or z axis
+        ## y stays the same for start and end points
+        positions = self.get_positions().reshape(-1, 4)
+        positions[:, 2] *= -1 # align with the coordinates
+        num_points = positions.shape[0]
+        # pos_xz = positions[:, [0, 2]]
+        pos_xyz = positions[:, [0,1,2]]
+
+        pos_x, pos_y, pos_z = positions[:, 0], positions[:, 1], positions[:, 2]
+        center_x, center_y, center_z = np.median(pos_x), np.median(pos_y), np.median(pos_z)
+        max_y = np.max(pos_y)
+        min_y = np.min(pos_y)
+        min_x = np.min(pos_x)
+        min_z = np.min(pos_z)
+        first_quartile = ((center_y - min_y) / 2) + min_y
+        third_quartile = ((max_y - center_y) / 2) + center_y
+        eighth = ((first_quartile - min_y) / 2) + min_y
+        bottom_tenth = (max_y - min_y) * (0.1) + min_y
+        chosen_points = []
+
+        stiffness = physics_params['stiffness']
+        #y_threshold = (1.0 - stiffness) * max_y
+        if stiffness > 0.5:
+            # stiffer cubes can do significantly shallower pokes
+            thres = ((1 - stiffness)/2) + stiffness
+            y_threshold = max_y #thres * max_y
+        else:
+            y_threshold = stiffness * (max_y - min_y) + min_y
+        print(f"stiffness: {stiffness}, y_threshold: {y_threshold}, min_y: {min_y}, first_quart: {first_quartile}, \
+              center_y: {center_y}, third_quart: {third_quartile}, max: {max_y}, eighth: {eighth}")
+        # calculate surface area
+        x_length = np.max(pos_x) - np.min(pos_x)
+        z_length = np.max(pos_z) - np.min(pos_z)
+        y_length = max_y - min_y
+        surface_area = x_length * z_length
+        print(f"******x_length: {x_length}, z_length: {z_length}, surface area: {surface_area}, y_length: {y_length}******")
+        for idx, (x, y, z) in enumerate(zip(pos_x, pos_y, pos_z)):
+            # choose obj particles that are above the table
+            # end effector point is at the top of the stick, not the bottom, so add self.stick_len back
+            if np.sqrt((x-center_x)**2 + (y-center_y)**2 + (z-center_z)**2) < 2.0 and y >= self.wkspace_height:
+                if y >= bottom_tenth:
+                    # This is a softer case, but still don't want pokes that are too deep for tall rectangular objects
+                    # Note that the particles that have inf weight are the bottom 10% y coordinate particles
+                    # For cubes with larger surface area (bigger cubes) slightly reduce depth of poke
+                    dist = np.absolute(y - max_y)
+                    chosen_points.append(idx)
+        print(f'chosen points {len(chosen_points)} out of {num_points}.')
+        if len(chosen_points) == 0:
+            print('no chosen points')
+            chosen_points = np.arange(num_points)
+
+        x_or_z = np.random.rand()
+        valid = False
+        if x_or_z <= 0.5:
+            ## Move along x-axis only for horizontal push
+            for _ in range(1000):
+                # choose end points which is the expolation of the start point and obj point
+                pickpoint = np.random.choice(chosen_points)
+                obj_pos = positions[pickpoint, :]
+
+                # startpoint_pos = [x_start, z_start, y_start]
+                #x_disturb = np.random.uniform(-0.5, 0.5)
+                #y_disturb = np.random.uniform(-0.5, 0.5)
+                x_start = np.random.uniform(min_x - 0.5, min_x - 2.0)
+                #startpoint_pos_origin = np.array([obj_pos[0]+x_disturb, obj_pos[2]+z_disturb, y_start]).reshape(1,3)
+                startpoint_pos_origin = np.array([x_start, obj_pos[2], obj_pos[1]]).reshape(1,3)
+                startpoint_pos = startpoint_pos_origin.copy()
+                startpoint_pos = startpoint_pos.reshape(-1)
+                # similar x,z as the target obj particle pos
+                #slope = (obj_pos[1] - startpoint_pos[1]) / (obj_pos[0] - startpoint_pos[0])
+                horizontal = (obj_pos[0] - startpoint_pos[0])
+                # if obj_pos[0] < startpoint_pos[0]:
+                #     # 1.0 for planning
+                #     # (1.5, 2.0) for data collection
+                #     x_end = obj_pos[0] - 1.0 #rand_float(1.5, 2.0)
+                # else:
+                #     x_end = obj_pos[0] + 1.0 #rand_float(1.5, 2.0)
+                #y_end = slope * (x_end - startpoint_pos[0]) + startpoint_pos[1]
+                #y_end = obj_pos[1] # go a bit beyond the point to poke it
+                x_end = obj_pos[0]
+                # endpoint is particle's position
+                endpoint_pos = np.array([x_end, obj_pos[2], obj_pos[1]]) #np.array([x_end, y_end])
+                #and np.abs(x_end) < 1.5 and np.abs(y_end) < 1.5
+                if obj_pos[0] != startpoint_pos[0] and horizontal > 0 \
+                    and np.min(cdist(startpoint_pos_origin, pos_xyz)) > 0.2:
+                    # Need to ensure vertical difference is negative for top down poke
+                    print(f"sampled valid action in horizontal x-axis poking...")
+                    valid = True
+                    break
+        else:
+            ## Move along z-axis only for horizontal push
+            for _ in range(1000):
+                # choose end points which is the expolation of the start point and obj point
+                pickpoint = np.random.choice(chosen_points)
+                obj_pos = positions[pickpoint, :]
+
+                # startpoint_pos = [x_start, z_start, y_start]
+                y_disturb = np.random.uniform(-0.5, 0.5)
+                z_start = np.random.uniform(min_z - 0.5, min_z - 2.0)
+                #startpoint_pos_origin = np.array([obj_pos[0]+x_disturb, obj_pos[2]+z_disturb, y_start]).reshape(1,3)
+                startpoint_pos_origin = np.array([obj_pos[0], z_start, obj_pos[1]]).reshape(1,3)
+                startpoint_pos = startpoint_pos_origin.copy()
+                startpoint_pos = startpoint_pos.reshape(-1)
+                # similar x,z as the target obj particle pos
+                #slope = (obj_pos[1] - startpoint_pos[1]) / (obj_pos[0] - startpoint_pos[0])
+                horizontal = (obj_pos[2] - startpoint_pos[1])
+                # if obj_pos[0] < startpoint_pos[0]:
+                #     # 1.0 for planning
+                #     # (1.5, 2.0) for data collection
+                #     x_end = obj_pos[0] - 1.0 #rand_float(1.5, 2.0)
+                # else:
+                #     x_end = obj_pos[0] + 1.0 #rand_float(1.5, 2.0)
+                #y_end = slope * (x_end - startpoint_pos[0]) + startpoint_pos[1]
+                #y_end = obj_pos[1] # go a bit beyond the point to poke it
+                z_end = obj_pos[2]
+                # endpoint is particle's position
+                endpoint_pos = np.array([obj_pos[0], z_end, obj_pos[1]]) #np.array([x_end, y_end])
+                if obj_pos[2] != startpoint_pos[1] and horizontal > 0 \
+                    and np.min(cdist(startpoint_pos_origin, pos_xyz)) > 0.2:
+                    # Need to ensure vertical difference is negative for top down poke
+                    print(f"sampled valid action in horizontal z-axis poking...")
+                    valid = True
+                    break
+        
+        # Return valid action
+        if valid:
+            action = np.concatenate([startpoint_pos.reshape(-1), endpoint_pos.reshape(-1)], axis=0)
+        else:
+            action = None
+        # action = [x_start, z_start, y_start, x_end, z_end, y_end]
+        return action
+    
     def sample_top_down_deform_actions(self, physics_params):
         ## Have robot poke at the object from top down
         ## Returns a 6-dim vector [x_start, z_start, y_start, x_end, z_end, y_end]
@@ -596,8 +736,9 @@ class FlexEnv(gym.Env):
         # calculate surface area
         x_length = np.max(pos_x) - np.min(pos_x)
         z_length = np.max(pos_z) - np.min(pos_z)
+        y_length = max_y - min_y
         surface_area = x_length * z_length
-        print(f"$$$$$$$$$$$$$$$surface area: {surface_area}")
+        print(f"******x_length: {x_length}, z_length: {z_length}, surface area: {surface_area}, y_length: {y_length}******")
         #is_surface_poke = (np.random.uniform(0.0, 1.0) <= 0.1)
         #print(f"choosing a surface-level particle: {is_surface_poke}")
         for idx, (x, y, z) in enumerate(zip(pos_x, pos_y, pos_z)):
@@ -611,11 +752,14 @@ class FlexEnv(gym.Env):
                     # This is a softer case, but still don't want pokes that are too deep for tall rectangular objects
                     # Note that the particles that have inf weight are the bottom 10% y coordinate particles
                     # For cubes with larger surface area (bigger cubes) slightly reduce depth of poke
-                    #if y <= y_threshold:
-                    #if y <= third_quartile and y >= eighth:
-                    if y <= third_quartile and y >= first_quartile:
+                    dist = np.absolute(y - max_y)
                     #if y <= center_y:
-                        chosen_points.append(idx)
+                    if y_length >= 1.9:
+                        if y <= third_quartile and y >= first_quartile:
+                            chosen_points.append(idx)
+                    else:
+                        if y <= third_quartile and y >= eighth:
+                            chosen_points.append(idx)
                 else:
                     # Stiffer case
                     # Point cannot be farther down than stick len
@@ -633,11 +777,6 @@ class FlexEnv(gym.Env):
                 # if is_surface_poke:
                 #     #if y >= (max_y * 0.95):
                 #     if y < (0.85*max_y):
-                #         chosen_points.append(idx)
-                # else:
-                #     # any point in the object
-                #     # want medium to deeper pokes
-                #     if y <= center_y:
                 #         chosen_points.append(idx)
         print(f'chosen points {len(chosen_points)} out of {num_points}.')
         if len(chosen_points) == 0:
@@ -664,7 +803,8 @@ class FlexEnv(gym.Env):
             #    y_start = np.random.uniform(max_y + 0.5, max_y + 3.0)
             #else:
             y_start = np.random.uniform(max_y + 0.5, max_y + 2.0)
-            startpoint_pos_origin = np.array([obj_pos[0]+x_disturb, obj_pos[2]+z_disturb, y_start]).reshape(1,3)
+            #startpoint_pos_origin = np.array([obj_pos[0]+x_disturb, obj_pos[2]+z_disturb, y_start]).reshape(1,3)
+            startpoint_pos_origin = np.array([obj_pos[0], obj_pos[2], y_start]).reshape(1,3)
             startpoint_pos = startpoint_pos_origin.copy()
             startpoint_pos = startpoint_pos.reshape(-1)
             # similar x,z as the target obj particle pos
