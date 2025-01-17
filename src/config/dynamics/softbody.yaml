@@ -4,10 +4,10 @@ dataset_config:
   #output_name: "y-trans-x-rot-90-flatboard-softbody-cylinder-damping-2-deep-poke-then-lift-s-m-e-e-m-s-waypoints"
   #output_name: "train-50-70-epi-100-damping-2-flatboard-softbody-cubes-deeper-poke-and-lift-s-m-e-e-m-s-waypoints"
   #data_folder: "epi-100-damping-2-flatboard-softbody-cubes-deeper-poke-and-lift-s-m-e-e-m-s-waypoints"
-  data_folder: "epi-2-xz-scale-10-y-scale-18-softbody-cubes-flatboard-horizontal-poke-and-retreat"
+  data_folder: "epi-2-xz-scale-10-y-scale-18-stiff-0-99-softbody-cubes-flatboard-shorter-horizontal-poke-and-retreat-above-50-center-dist-thres-0-1"
   #output_name: "increase-cluster-rad-decrease-cluster-space-small-softbody-cubes-flatboard-poke-and-lift"
   #data_folder: "epi-5-smaller-actual-similar-size-softbody-cubes-flatboard-deeper-poke-and-lift"
-  output_name: "testing-max-nobj-300-connect-tool-surface-0-8-pstep-4-epi-2-xz-scale-10-y-scale-18-softbody-cubes-flatboard-horizontal-poke-and-retreat"
+  output_name: "testing-max-nobj-300-connect-tool-surface-0-8-pstep-4-epi-2-xz-scale-10-y-scale-18-stiff-0-99-softbody-cubes-flatboard-shorter-horizontal-poke-and-retreat-above-50-center-dist-thres-0-1"
   #output_name: "frame-pairs-pstep-4-val-try-connect-tool-surface-0-8-medium-fps-rad-epi-5-smaller-actual-similar-size-softbody-cubes-flatboard-deeper-poke-and-lift"
   materials: ["softbody"]
   #data_dir: "../sim_data" # data directory

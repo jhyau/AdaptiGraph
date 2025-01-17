@@ -91,6 +91,7 @@ def construct_edges_from_states(states, adj_thresh, mask, tool_mask, topk=10, co
         # print(f"after connect_tools_all: \n{adj_matrix}")
     
     if connect_tools_surface and max_y is not None:
+        # TODO: determine closest "surface" based on x, y, or z axis
         # Only attach tool when there is at least one connection between object and tool particles based on distance threshold
         # print(tool_mask_1.is_cuda)
         # print(tool_mask_2.is_cuda)

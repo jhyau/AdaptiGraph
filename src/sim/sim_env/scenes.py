@@ -215,6 +215,8 @@ def softbody_scene():
     # make sure object isn't too large. or else you'd need to modify the number of max particles and the cluster radius
     # otherwise particles will be too spread apart to form edges
     #s_scale = rand_int(10, 25)
+    ## Min viable scene is x_z_scale 10 for y_scale 18. Any smaller x_z_scale would cause the rectangle to droop and be
+    ## unable to recover from a horizontal push (surface area too small) 
     s_scale = 18 # smaller cube sizes: 12 with radius 0.05, y scale up to 18
     x_z_scale = 10
     y_scale = 18
@@ -226,9 +228,9 @@ def softbody_scene():
     
     # softbody stiffness
     #stiffness = np.random.rand()
-    #stiffness = 0.99 #np.random.uniform(0.5, 1.0)
+    stiffness = 0.99 #np.random.uniform(0.5, 1.0)
     # For no penetration, max global stiffness is 0.000012, cluster spacing 2.48
-    stiffness = np.random.uniform(0.0, 0.06)
+    #stiffness = np.random.uniform(0.0, 0.06)
     print(f"softbody stiffness for uniform/homogeneous: {stiffness}")
     if stiffness < 0.5:
         global_stiffness = stiffness * 1e-4 / 0.5

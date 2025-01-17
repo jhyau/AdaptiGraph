@@ -507,8 +507,8 @@ class FlexEnv(gym.Env):
             else:
                 print("^^^^^^^^sampling top down poke action^^^^^^^^^")
                 # This movement is in the y-coordinate, x and z should be fixed for each action
-                self.poke = True
                 action = self.sample_top_down_deform_actions(physics_params)
+            self.poke = True
             return action
         elif self.obj in ['multiobj']:
             #print("!!!!!!!!!!!!!!!!!grasping whole obj!!!!!!!!!!!!!!!")
@@ -580,11 +580,18 @@ class FlexEnv(gym.Env):
         max_y = np.max(pos_y)
         min_y = np.min(pos_y)
         min_x = np.min(pos_x)
+        max_x = np.max(pos_x)
         min_z = np.min(pos_z)
+        max_z = np.max(pos_z)
         first_quartile = ((center_y - min_y) / 2) + min_y
         third_quartile = ((max_y - center_y) / 2) + center_y
         eighth = ((first_quartile - min_y) / 2) + min_y
         bottom_tenth = (max_y - min_y) * (0.1) + min_y
+        bottom_fifteenth = (max_y - min_y) * (0.15) + min_y
+        if physics_params['stiffness'] > 0.5:
+            lower_threshold = center_y
+        else:
+            lower_threshold = bottom_fifteenth
         chosen_points = []
 
         stiffness = physics_params['stiffness']
@@ -607,10 +614,8 @@ class FlexEnv(gym.Env):
             # choose obj particles that are above the table
             # end effector point is at the top of the stick, not the bottom, so add self.stick_len back
             if np.sqrt((x-center_x)**2 + (y-center_y)**2 + (z-center_z)**2) < 2.0 and y >= self.wkspace_height:
-                if y >= bottom_tenth:
-                    # This is a softer case, but still don't want pokes that are too deep for tall rectangular objects
+                if y >= lower_threshold:
                     # Note that the particles that have inf weight are the bottom 10% y coordinate particles
-                    # For cubes with larger surface area (bigger cubes) slightly reduce depth of poke
                     dist = np.absolute(y - max_y)
                     chosen_points.append(idx)
         print(f'chosen points {len(chosen_points)} out of {num_points}.')
@@ -620,6 +625,7 @@ class FlexEnv(gym.Env):
 
         x_or_z = np.random.rand()
         valid = False
+        DIST_FROM_CENTER_THRESHOLD = 0.1
         if x_or_z <= 0.5:
             ## Move along x-axis only for horizontal push
             for _ in range(1000):
@@ -628,16 +634,35 @@ class FlexEnv(gym.Env):
                 obj_pos = positions[pickpoint, :]
 
                 # startpoint_pos = [x_start, z_start, y_start]
-                #x_disturb = np.random.uniform(-0.5, 0.5)
                 #y_disturb = np.random.uniform(-0.5, 0.5)
-                x_start = np.random.uniform(min_x - 0.5, min_x - 2.0)
-                #startpoint_pos_origin = np.array([obj_pos[0]+x_disturb, obj_pos[2]+z_disturb, y_start]).reshape(1,3)
+                ## Start at min x or max x depending on how deep the poke should be
+                lower_half = obj_pos[1] < center_y
+                min_to_point = np.absolute(obj_pos[0] - min_x)
+                max_to_point = np.absolute(obj_pos[0] - max_x)
+                if lower_half:
+                    # Shallower push for lower half (closer to the ground)
+                    # If the point is near the center, then skip it
+                    if np.absolute(obj_pos[0] - center_x) <= DIST_FROM_CENTER_THRESHOLD:
+                        continue
+                    if min_to_point <= max_to_point:
+                        x_start = np.random.uniform(min_x - 0.5, min_x - 2.0)
+                    else:
+                        x_start = np.random.uniform(max_x + 0.5, max_x + 2.0)
+                else:
+                    # For upper half, can do slightly deeper push
+                    if physics_params['stiffness'] > 0.5 and np.absolute(obj_pos[0] - center_x) <= DIST_FROM_CENTER_THRESHOLD:
+                        continue
+                    if np.random.rand() <= 0.5:
+                        x_start = np.random.uniform(min_x - 0.5, min_x - 2.0)
+                    else:
+                        x_start = np.random.uniform(max_x + 0.5, max_x + 2.0)
+                #startpoint_pos_origin = np.array([x_start, obj_pos[2], y_start + y_disturb]).reshape(1,3)
                 startpoint_pos_origin = np.array([x_start, obj_pos[2], obj_pos[1]]).reshape(1,3)
                 startpoint_pos = startpoint_pos_origin.copy()
                 startpoint_pos = startpoint_pos.reshape(-1)
                 # similar x,z as the target obj particle pos
                 #slope = (obj_pos[1] - startpoint_pos[1]) / (obj_pos[0] - startpoint_pos[0])
-                horizontal = (obj_pos[0] - startpoint_pos[0])
+                horizontal = np.absolute(obj_pos[0] - startpoint_pos[0])
                 # if obj_pos[0] < startpoint_pos[0]:
                 #     # 1.0 for planning
                 #     # (1.5, 2.0) for data collection
@@ -665,14 +690,33 @@ class FlexEnv(gym.Env):
 
                 # startpoint_pos = [x_start, z_start, y_start]
                 y_disturb = np.random.uniform(-0.5, 0.5)
-                z_start = np.random.uniform(min_z - 0.5, min_z - 2.0)
+                lower_half = obj_pos[1] < center_y
+                min_to_point = np.absolute(obj_pos[0] - min_z)
+                max_to_point = np.absolute(obj_pos[0] - max_z)
+                if lower_half:
+                    # Shallower push for lower half (closer to the ground)
+                    # If the point is near the center, then skip it
+                    if np.absolute(obj_pos[2] - center_z) <= DIST_FROM_CENTER_THRESHOLD:
+                        continue
+                    if min_to_point <= max_to_point:
+                        z_start = np.random.uniform(min_z - 0.5, min_z - 2.0)
+                    else:
+                        z_start = np.random.uniform(max_z + 0.5, max_z + 2.0)
+                else:
+                    if physics_params['stiffness'] > 0.5 and np.absolute(obj_pos[2] - center_z) <= DIST_FROM_CENTER_THRESHOLD:
+                        continue
+                    # Slightly deeper push ok for higher up
+                    if np.random.rand() <= 0.5:
+                        z_start = np.random.uniform(min_z - 0.5, min_z - 2.0)
+                    else:
+                        z_start = np.random.uniform(max_z + 0.5, max_z + 2.0)
                 #startpoint_pos_origin = np.array([obj_pos[0]+x_disturb, obj_pos[2]+z_disturb, y_start]).reshape(1,3)
                 startpoint_pos_origin = np.array([obj_pos[0], z_start, obj_pos[1]]).reshape(1,3)
                 startpoint_pos = startpoint_pos_origin.copy()
                 startpoint_pos = startpoint_pos.reshape(-1)
                 # similar x,z as the target obj particle pos
                 #slope = (obj_pos[1] - startpoint_pos[1]) / (obj_pos[0] - startpoint_pos[0])
-                horizontal = (obj_pos[2] - startpoint_pos[1])
+                horizontal = np.abs(obj_pos[2] - startpoint_pos[1])
                 # if obj_pos[0] < startpoint_pos[0]:
                 #     # 1.0 for planning
                 #     # (1.5, 2.0) for data collection
