@@ -148,15 +148,27 @@ class DynDataset(Dataset):
         ## load history states
         # state_history: (n_his, N_obj + N_eef, 3)
         max_y = 0
+        max_x = 0
+        max_z = 0
+        min_x = 0
+        min_z = 0
         state_history = np.zeros((self.n_his, self.state_dim, self.pos_dim), dtype=np.float32)
         for fi in range(self.n_his):
             obj_kp_his = fps_obj_kps[fi] # (N_obj, 3)
             max_y = np.max(obj_kp_his[:,1])
+            max_x = np.max(obj_kp_his[:,0])
+            max_z = np.max(obj_kp_his[:,2])
+            min_x = np.min(obj_kp_his[:,0])
+            min_z = np.min(obj_kp_his[:,2])
             eef_kp_his = eef_kps[fi] # (N_eef, 3)
             state_history[fi] = np.concatenate([obj_kp_his, eef_kp_his], axis=0)
         if self.verbose:
             print(f"history states: {state_history.shape}.")
+        min_x = (max_x - min_x) * (1 - self.connect_tool_surface_ratio) + min_x
+        min_z = (max_z - min_z) * (1 - self.connect_tool_surface_ratio) + min_z
         max_y = max_y * self.connect_tool_surface_ratio #0.8
+        max_x = max_x * self.connect_tool_surface_ratio
+        max_z = max_z * self.connect_tool_surface_ratio
 
         ## load future states
         # future objects: (n_future, N_obj, 3)
@@ -253,6 +265,7 @@ class DynDataset(Dataset):
         adj_thresh = np.random.uniform(*self.adj_radius_range)
         Rr, Rs = construct_edges_from_states(state_history[-1], adj_thresh, state_mask, eef_mask, 
                                              self.topk, self.connect_tool_all, max_y=max_y,
+                                             max_x=max_x, max_z=max_z,
                                              connect_tools_surface=self.connect_tool_surface)
         Rr = pad_torch(Rr, self.max_nR)
         Rs = pad_torch(Rs, self.max_nR)

@@ -36,7 +36,7 @@ def fps(obj_kp_start, max_nobj, fps_radius_range, verbose=False):
         return fps_idx_list
 
 def construct_edges_from_states(states, adj_thresh, mask, tool_mask, topk=10, connect_tools_all=False, 
-                                max_y=None,
+                                max_y=None, max_x=None, max_z=None, min_x=None, min_z=None,
                                 connect_tools_surface=True):
     # :param states: (N, state_dim) torch tensor
     # :param adj_thresh: float

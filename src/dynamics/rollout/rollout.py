@@ -118,6 +118,12 @@ def rollout_from_start_graph(graph, fps_idx_list, dataset_config, material_confi
                 part_2_obj_inst_vis = None
             print(f"obj_kp_num: {obj_kp_num}, obj_kp shape: {obj_kp.shape}, obj_kp_vis shape: {obj_kp_vis.shape}")
             max_y = np.max(obj_kp_vis[:,1]) * connect_tool_surface_ratio #0.8
+            max_x = np.max(obj_kp_vis[:,0]) * connect_tool_surface_ratio
+            max_z = np.max(obj_kp_vis[:,2]) * connect_tool_surface_ratio
+            min_x = np.min(obj_kp_vis[:,0])
+            min_x = (max_x - min_x) * (1 - connect_tool_surface_ratio) + min_x
+            min_z = np.min(obj_kp_vis[:,2])
+            min_z = (max_z - min_z) * (1 - connect_tool_surface_ratio) + min_z
             
             if part_inv_weight_0 is not None:
                 part_inv_weight_0_vis = part_inv_weight_0[current_end][fps_idx_list]
@@ -151,7 +157,8 @@ def rollout_from_start_graph(graph, fps_idx_list, dataset_config, material_confi
                                                  mask=graph['state_mask'][0],
                                                  tool_mask=graph['eef_mask'][0],
                                                  topk=topk, connect_tools_all=connect_tool_all,
-                                                 max_y=max_y,
+                                                 max_y=max_y, max_x=max_x, max_z=max_z,
+                                                 min_x=min_x, min_z=min_z,
                                                  connect_tools_surface=connect_tool_surface)
             print(f"max_nR: {max_nR}, Rr size: {Rr.size()}, Rs size: {Rs.size()}")
             Rr = pad_torch(Rr, max_nR)

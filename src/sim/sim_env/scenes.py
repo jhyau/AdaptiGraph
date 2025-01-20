@@ -217,31 +217,38 @@ def softbody_scene():
     #s_scale = rand_int(10, 25)
     ## Min viable scene is x_z_scale 10 for y_scale 18. Any smaller x_z_scale would cause the rectangle to droop and be
     ## unable to recover from a horizontal push (surface area too small) 
-    s_scale = 18 # smaller cube sizes: 12 with radius 0.05, y scale up to 18
-    x_z_scale = 10
-    y_scale = 18
+    #s_scale = 18 # smaller cube sizes: 12 with radius 0.05, y scale up to 18
+    x_z_scale = rand_int(10, 13) #10
+    y_scale = rand_int(10, 18) #18
     # allow greater variance for height, but don't allow anything beyond 80
     # surface area of the xz plane needs to be smaller to avoid having the flatboard push get snagged on the corner
     #scale = np.array([rand_float(2.0, 2.5), rand_float(2.1, 3.0), rand_float(2.0, 2.5)]) * s_scale #* 50
     scale = np.array([rand_float(2.0, 2.5) * x_z_scale, rand_float(2.1, 3.0) * y_scale, rand_float(2.0, 2.5) * x_z_scale])
-    print(f"softbody scale: {scale} with x_z_scale: {x_z_scale}, y_scale: {y_scale}, s_scale: {s_scale}")
+    print(f"softbody scale: {scale} with x_z_scale: {x_z_scale}, y_scale: {y_scale}")
     
     # softbody stiffness
     #stiffness = np.random.rand()
-    stiffness = 0.99 #np.random.uniform(0.5, 1.0)
-    # For no penetration, max global stiffness is 0.000012, cluster spacing 2.48
-    #stiffness = np.random.uniform(0.0, 0.06)
+    stiffness = np.random.uniform(0.5, 1.0)
+    # For no penetration of soft case, max global stiffness is 0.000012, cluster spacing 2.48
+    # OG soft case: (0.0, 0.06), stiff case: 0.99
+    #if np.random.rand() <= 0.5:
+        # soft case
+    #    stiffness = np.random.uniform(0.0, 0.06)
+    #else:
+        # stiff case
+    #    stiffness = np.random.uniform(0.06, 1.0)
     print(f"softbody stiffness for uniform/homogeneous: {stiffness}")
-    if stiffness < 0.5:
-        global_stiffness = stiffness * 1e-4 / 0.5
-        cluster_spacing = 2 + 8 * stiffness
-        #global_stiffness = stiffness
+    if stiffness <= 0.5:
+        #global_stiffness = stiffness * 1e-4 / 0.5
         #cluster_spacing = 2 + 8 * stiffness
+        global_stiffness = stiffness * 1.2e-5 / 0.5
+        cluster_spacing = 2 + 0.96 * stiffness
     else:
-        #global_stiffness = (stiffness - 0.5) * 4e-4 + 1e-4
-        global_stiffness = 1.0 #stiffness * 4e-4 + 4e-4
-        #cluster_spacing = 6 + 4 * (stiffness - 0.5)
-        cluster_spacing = 0.0 #+ 8 * stiffness
+        # For stiff case, stiffness 0.99 works pretty well (slight penetration sometimes)
+        global_stiffness = (stiffness - 0.5) * 4e-4 + 1e-4
+        #global_stiffness = stiffness #* 4e-4 + 4e-4
+        cluster_spacing = 6 + 4 * (stiffness - 0.5)
+        #cluster_spacing = 0.0 #+ 8 * stiffness
     
     # For very soft cases, don't want the cube to be too tall
     # if stiffness < 0.1:
