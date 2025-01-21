@@ -127,6 +127,7 @@ def construct_edges_from_states(states, adj_thresh, mask, tool_mask, topk=10, co
         check = torch.sum(adj_tool_sender)
         print(f"determine if there are any adjacent points check: {check}")
         print(f"adj_tool_sender dtype: {adj_tool_sender.dtype}")
+        print(f"max_y: {max_y}, min_y: {min_y}")
         ## Bottom 10% of y-coordinates are fixed particles
         threshold = (max_y - min_y) * 0.1 + min_y
         if check > 0:

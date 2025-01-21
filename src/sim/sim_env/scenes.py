@@ -228,7 +228,7 @@ def softbody_scene():
     
     # softbody stiffness
     stiffness = np.random.rand()
-    #stiffness = np.random.uniform(0.5, 1.0)
+    # stiffness = np.random.uniform(0.5, 1.0)
     # For no penetration of soft case, max global stiffness is 0.000012, cluster spacing 2.48
     # OG soft case: (0.0, 0.06), stiff case: 0.99
     #if np.random.rand() <= 0.5:

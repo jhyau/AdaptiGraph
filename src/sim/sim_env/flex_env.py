@@ -593,14 +593,16 @@ class FlexEnv(gym.Env):
         # Determine push based on stiffness
         stiffness = physics_params['stiffness']
         STIFF_UPPER_LIMIT = 0.05
+        SOFT_UPPER_LIMIT = 0.03
         if stiffness > 0.5:
             ## Stiff case
-            lower_threshold = center_y
+            lower_threshold = first_quartile #center_y
             upper_threshold = max_y - (max_y - min_y) * STIFF_UPPER_LIMIT
         else:
             ## Soft case
             lower_threshold = bottom_fifteenth
-            upper_threshold = max_y
+            upper_threshold = max_y - (max_y - min_y) * SOFT_UPPER_LIMIT
+            #upper_threshold = max_y
         chosen_points = []
 
         #y_threshold = (1.0 - stiffness) * max_y
@@ -815,7 +817,7 @@ class FlexEnv(gym.Env):
             # sample both surface and some penetration points, upper half
             # end effector point is at the top of the stick, not the bottom, so add self.stick_len back
             if np.sqrt((x-center_x)**2 + (y-center_y)**2 + (z-center_z)**2) < 2.0 and y >= self.wkspace_height:
-                if y_threshold <= center_y:
+                if stiffness <= 0.5:
                     # This is a softer case, but still don't want pokes that are too deep for tall rectangular objects
                     # Note that the particles that have inf weight are the bottom 10% y coordinate particles
                     # For cubes with larger surface area (bigger cubes) slightly reduce depth of poke
@@ -838,7 +840,6 @@ class FlexEnv(gym.Env):
                     fives = (max_y - min_y) / 20
                     if y <= (max_y - quart) and y >= (max_y - fives):
                     #if y <= (max_y - fives) and y >= center_y:
-                    #if y <= center_y:
                         chosen_points.append(idx)
                 # choose surface points only or also include middle points
                 # if is_surface_poke:
