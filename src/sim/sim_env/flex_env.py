@@ -499,14 +499,15 @@ class FlexEnv(gym.Env):
             return action, boundary_points, boundary
         elif self.obj in ['softbody']:
             ## Choose between vertical poke or horizontal push
-            # For stiff cubes, do horizontal push only
+            ## For stiff cubes, do horizontal push only
             act = np.random.rand()
-            if physics_params['stiffness'] >= 0.5 or act > 0.5:
+            if physics_params['stiffness'] > 0.5 or act > 0.5:
+                ## This movement is in x or z-coordinate, y is fixed for each action
                 print(f"=========sampling horizontal push action===========")
                 action = self.sample_horizontal_deform_actions(physics_params)
             else:
                 print("^^^^^^^^sampling top down poke action^^^^^^^^^")
-                # This movement is in the y-coordinate, x and z should be fixed for each action
+                ## This movement is in the y-coordinate, x and z should be fixed for each action
                 action = self.sample_top_down_deform_actions(physics_params)
             self.poke = True
             return action
@@ -593,11 +594,11 @@ class FlexEnv(gym.Env):
         stiffness = physics_params['stiffness']
         STIFF_UPPER_LIMIT = 0.05
         if stiffness > 0.5:
-            # Stiff case
+            ## Stiff case
             lower_threshold = center_y
             upper_threshold = max_y - (max_y - min_y) * STIFF_UPPER_LIMIT
         else:
-            # Soft case
+            ## Soft case
             lower_threshold = bottom_fifteenth
             upper_threshold = max_y
         chosen_points = []
@@ -707,8 +708,8 @@ class FlexEnv(gym.Env):
                 x_disturb = np.random.uniform(-0.5, 0.5)
                 y_disturb = np.random.uniform(-0.5, 0.5)
                 lower_half = obj_pos[1] < center_y
-                min_to_point = np.absolute(obj_pos[0] - min_z)
-                max_to_point = np.absolute(obj_pos[0] - max_z)
+                min_to_point = np.absolute(obj_pos[2] - min_z)
+                max_to_point = np.absolute(obj_pos[2] - max_z)
                 if lower_half:
                     # Shallower push for lower half (closer to the ground)
                     # If the point is near the center, then skip it
