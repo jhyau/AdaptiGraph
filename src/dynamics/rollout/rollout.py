@@ -34,6 +34,7 @@ def rollout_from_start_graph(graph, fps_idx_list, dataset_config, material_confi
     adj_thresh = (dataset['adj_radius_range'][0] + dataset['adj_radius_range'][1]) / 2
     topk = dataset['topk']
     connect_tool_all = dataset['connect_tool_all']
+    connect_tool_all_non_fixed = dataset['connect_tool_all_non_fixed']
     if "connect_tool_surface" in dataset:
         connect_tool_surface = dataset['connect_tool_surface']
         connect_tool_surface_ratio = dataset['connect_tool_surface_ratio']
@@ -118,6 +119,7 @@ def rollout_from_start_graph(graph, fps_idx_list, dataset_config, material_confi
                 part_2_obj_inst_vis = None
             print(f"obj_kp_num: {obj_kp_num}, obj_kp shape: {obj_kp.shape}, obj_kp_vis shape: {obj_kp_vis.shape}")
             max_y = np.max(obj_kp_vis[:,1]) * connect_tool_surface_ratio #0.8
+            min_y = np.min(obj_kp_vis[:,1])
             max_x = np.max(obj_kp_vis[:,0]) * connect_tool_surface_ratio
             max_z = np.max(obj_kp_vis[:,2]) * connect_tool_surface_ratio
             min_x = np.min(obj_kp_vis[:,0])
@@ -157,9 +159,10 @@ def rollout_from_start_graph(graph, fps_idx_list, dataset_config, material_confi
                                                  mask=graph['state_mask'][0],
                                                  tool_mask=graph['eef_mask'][0],
                                                  topk=topk, connect_tools_all=connect_tool_all,
-                                                 max_y=max_y, max_x=max_x, max_z=max_z,
+                                                 max_y=max_y, min_y=min_y, max_x=max_x, max_z=max_z,
                                                  min_x=min_x, min_z=min_z,
-                                                 connect_tools_surface=connect_tool_surface)
+                                                 connect_tools_surface=connect_tool_surface,
+                                                 connect_tool_all_non_fixed=connect_tool_all_non_fixed)
             print(f"max_nR: {max_nR}, Rr size: {Rr.size()}, Rs size: {Rs.size()}")
             Rr = pad_torch(Rr, max_nR)
             Rs = pad_torch(Rs, max_nR)

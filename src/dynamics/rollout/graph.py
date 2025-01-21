@@ -348,6 +348,7 @@ def construct_graph(dataset_config, material_config, eef_pos, obj_pos,
     adj_thresh = (dataset['adj_radius_range'][0] + dataset['adj_radius_range'][1]) / 2
     topk = dataset['topk']
     connect_tool_all = dataset['connect_tool_all']
+    connect_tool_all_non_fixed = dataset['connect_tool_all_non_fixed']
     if "connect_tool_surface" in dataset:
         connect_tool_surface = dataset['connect_tool_surface']
         connect_tool_surface_ratio = dataset['connect_tool_surface_ratio']
@@ -414,6 +415,7 @@ def construct_graph(dataset_config, material_config, eef_pos, obj_pos,
     ## load history states
     # state_history: (n_his, N_obj + N_eef, 3)
     max_y = 0
+    min_y = 0
     max_x = 0
     max_z = 0
     min_x = 0
@@ -422,6 +424,7 @@ def construct_graph(dataset_config, material_config, eef_pos, obj_pos,
     for fi in range(n_his):
         obj_kp_his = fps_obj_kps[fi] # (N_obj, 3)
         max_y = np.max(obj_kp_his[:,1])
+        min_y = np.min(obj_kp_his[:,1])
         max_x = np.max(obj_kp_his[:,0])
         max_z = np.max(obj_kp_his[:,2])
         min_x = np.min(obj_kp_his[:,0])
@@ -482,9 +485,10 @@ def construct_graph(dataset_config, material_config, eef_pos, obj_pos,
 
     # construct relations (density as hyperparameter)
     Rr, Rs = construct_edges_from_states(state_history[-1], adj_thresh, state_mask, eef_mask,
-                                         topk, connect_tool_all, max_y=max_y, max_x=max_x, max_z=max_z,
+                                         topk, connect_tool_all, max_y=max_y, min_y=min_y, max_x=max_x, max_z=max_z,
                                          min_x=min_x, min_z=min_z,
-                                         connect_tools_surface=connect_tool_surface)
+                                         connect_tools_surface=connect_tool_surface,
+                                         connect_tool_all_non_fixed=connect_tool_all_non_fixed)
     Rr = pad_torch(Rr, max_nR)
     Rs = pad_torch(Rs, max_nR)
 

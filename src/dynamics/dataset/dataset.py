@@ -44,6 +44,7 @@ class DynDataset(Dataset):
         self.adj_radius_range = self.dataset['adj_radius_range']
         self.topk = self.dataset['topk']
         self.connect_tool_all = self.dataset['connect_tool_all']
+        self.connect_tool_all_non_fixed = self.dataset['connect_tool_all_non_fixed']
         if "connect_tool_surface" in self.dataset:
             self.connect_tool_surface = self.dataset['connect_tool_surface']
             self.connect_tool_surface_ratio = self.dataset['connect_tool_surface_ratio']
@@ -148,6 +149,7 @@ class DynDataset(Dataset):
         ## load history states
         # state_history: (n_his, N_obj + N_eef, 3)
         max_y = 0
+        min_y = 0
         max_x = 0
         max_z = 0
         min_x = 0
@@ -156,6 +158,7 @@ class DynDataset(Dataset):
         for fi in range(self.n_his):
             obj_kp_his = fps_obj_kps[fi] # (N_obj, 3)
             max_y = np.max(obj_kp_his[:,1])
+            min_y = np.min(obj_kp_his[:,1])
             max_x = np.max(obj_kp_his[:,0])
             max_z = np.max(obj_kp_his[:,2])
             min_x = np.min(obj_kp_his[:,0])
@@ -264,9 +267,10 @@ class DynDataset(Dataset):
         # Rr, Rs: (n_rel, N)
         adj_thresh = np.random.uniform(*self.adj_radius_range)
         Rr, Rs = construct_edges_from_states(state_history[-1], adj_thresh, state_mask, eef_mask, 
-                                             self.topk, self.connect_tool_all, max_y=max_y,
+                                             self.topk, self.connect_tool_all, max_y=max_y, min_y=min_y,
                                              max_x=max_x, max_z=max_z,
-                                             connect_tools_surface=self.connect_tool_surface)
+                                             connect_tools_surface=self.connect_tool_surface,
+                                             connect_tool_all_non_fixed=self.connect_tool_all_non_fixed)
         Rr = pad_torch(Rr, self.max_nR)
         Rs = pad_torch(Rs, self.max_nR)
         

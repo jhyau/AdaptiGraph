@@ -27,22 +27,39 @@ def pad(x, max_dim, dim=0):
     if dim == 0:
         x_dim = x.shape[0]
         x_pad = np.zeros((max_dim, x.shape[1]), dtype=np.float32)
-        x_pad[:x_dim] = x
+        if x_dim > max_dim:
+            x_pad[:max_dim] = x[:max_dim]
+        else:
+            x_pad[:x_dim] = x
+        #x_pad[:x_dim] = x
     elif dim == 1:
         x_dim = x.shape[1]
         x_pad = np.zeros((x.shape[0], max_dim, x.shape[2]), dtype=np.float32)
-        x_pad[:, :x_dim] = x
+        if x_dim > max_dim:
+            print(f"exceeding max edges allowed, x_dim: {x_dim}, max_dim: {max_dim}")
+            x_pad[:, :max_dim] = x[:, :max_dim]
+        else:
+            x_pad[:, :x_dim] = x
+        #x_pad[:, :x_dim] = x
     return x_pad
 
 def pad_torch(x, max_dim, dim=0):
+    ## If the x_dim exceeds max_dim, cut down to match max_dim
     if dim == 0:
         x_dim = x.shape[0]
         x_pad = torch.zeros((max_dim, x.shape[1]), dtype=x.dtype, device=x.device)
-        x_pad[:x_dim] = x
+        if x_dim > max_dim:
+            x_pad[:max_dim] = x[:max_dim]
+        else:
+            x_pad[:x_dim] = x
     elif dim == 1:
         x_dim = x.shape[1]
         x_pad = torch.zeros((x.shape[0], max_dim, x.shape[2]), dtype=x.dtype, device=x.device)
-        x_pad[:, :x_dim] = x
+        if x_dim > max_dim:
+            print(f"torch exceeding max edges allowed, x_dim: {x_dim}, max_dim: {max_dim}")
+            x_pad[:, :max_dim] = x[:, :max_dim]
+        else:
+            x_pad[:, :x_dim] = x
     return x_pad
 
 def quaternion_to_rotation_matrix(q):
