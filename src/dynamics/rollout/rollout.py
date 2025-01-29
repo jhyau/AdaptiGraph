@@ -33,6 +33,15 @@ def rollout_from_start_graph(graph, fps_idx_list, dataset_config, material_confi
     max_nR = dataset['max_nR']
     adj_thresh = (dataset['adj_radius_range'][0] + dataset['adj_radius_range'][1]) / 2
     topk = dataset['topk']
+    knn_thresh = (dataset['knn_range'][0] + dataset['knn_range'][1]) / 2
+    if "min_knn" in dataset:
+        min_kNN = dataset['min_knn']
+    else:
+        min_kNN = 1.0
+    if "knn_increment" in dataset:
+        knn_increment = dataset['knn_increment']
+    else:
+        knn_increment = 0.1
     connect_tool_all = dataset['connect_tool_all']
     connect_tool_all_non_fixed = dataset['connect_tool_all_non_fixed']
     if "connect_tool_surface" in dataset:
@@ -44,6 +53,7 @@ def rollout_from_start_graph(graph, fps_idx_list, dataset_config, material_confi
         connect_tool_surface_ratio = 1.0
     
     n_his = dataset_config['n_his']
+    store_rest_state = dataset_config['store_rest_state']
     n_frames = obj_pos.shape[0]
     assert eef_pos.shape[0] == n_frames
     
@@ -138,10 +148,14 @@ def rollout_from_start_graph(graph, fps_idx_list, dataset_config, material_confi
             print(f"error from rollout step {i}: {error}")
             
             # prepare next pair, start, end
-            next_pair = get_next_pair_or_break_func(pairs, n_his, n_frames, current_end)
+            next_pair = get_next_pair_or_break_func(pairs, n_his, n_frames, current_end, store_rest_state=store_rest_state)
             if next_pair is None: break
-            current_start = next_pair[n_his-1]
-            current_end = next_pair[n_his]
+            if store_rest_state:
+                current_start = next_pair[n_his-1-1]
+                current_end = next_pair[n_his-1]
+            else:
+                current_start = next_pair[n_his-1]
+                current_end = next_pair[n_his]
             idx_list.append([current_start, current_end])
             
             # generate next graph based on the current prediction
@@ -162,13 +176,58 @@ def rollout_from_start_graph(graph, fps_idx_list, dataset_config, material_confi
                                                  max_y=max_y, min_y=min_y, max_x=max_x, max_z=max_z,
                                                  min_x=min_x, min_z=min_z,
                                                  connect_tools_surface=connect_tool_surface,
-                                                 connect_tool_all_non_fixed=connect_tool_all_non_fixed)
-            print(f"max_nR: {max_nR}, Rr size: {Rr.size()}, Rs size: {Rs.size()}")
-            Rr = pad_torch(Rr, max_nR)
-            Rs = pad_torch(Rs, max_nR)
+                                                 connect_tool_all_non_fixed=connect_tool_all_non_fixed, kNN=knn_thresh)
+            # print(f"max_nR: {max_nR}, Rr size: {Rr.size()}, Rs size: {Rs.size()}")
+            #Rr = pad_torch(Rr, max_nR)
+            #Rs = pad_torch(Rs, max_nR)
+
+            exceed_max_nR = True
+            kNN = knn_thresh #1.0
+            decrease_topK = topk
+            while(exceed_max_nR):
+                # If edge construction exceeds the max allowed edges, start reducing edges first from tool to object connections, then by topk
+                try:
+                    print(f"max_nR: {max_nR}, Rr size: {Rr.size()}, Rs size: {Rs.size()}")
+                    Rr = pad_torch(Rr, max_nR)
+                    Rs = pad_torch(Rs, max_nR)
+                    exceed_max_nR = False
+                except Exception as e:
+                    # Exception due to exceeding the max threshold
+                    exceed_max_nR = True
+                    # Reduce adjacency threshold to reduce resolution of graph (fewer edges)
+                    if kNN <= min_kNN:
+                        # We can no longer further reduce the tool to object connections
+                        # raise Exception for this case, or start reducing the degrees of edges for each node by increasing topK
+                        print(f"!!!!!!!!!!!!!kNN has reached minimum of {min_kNN}!!!!!!!")
+                        decrease_topK = decrease_topK - 1
+                        Rr, Rs = construct_edges_from_states(torch.tensor(states), adj_thresh,
+                                                    mask=graph['state_mask'][0],
+                                                    tool_mask=graph['eef_mask'][0],
+                                                    topk=decrease_topK, connect_tools_all=connect_tool_all,
+                                                    max_y=max_y, min_y=min_y, max_x=max_x, max_z=max_z,
+                                                    min_x=min_x, min_z=min_z,
+                                                    connect_tools_surface=connect_tool_surface,
+                                                    connect_tool_all_non_fixed=connect_tool_all_non_fixed, kNN=kNN)
+                    else:
+                        kNN = kNN - knn_increment
+                        print(f"reducing kNN from 1.0 to {kNN}")
+                        Rr, Rs = construct_edges_from_states(torch.tensor(states), adj_thresh,
+                                                    mask=graph['state_mask'][0],
+                                                    tool_mask=graph['eef_mask'][0],
+                                                    topk=topk, connect_tools_all=connect_tool_all,
+                                                    max_y=max_y, min_y=min_y, max_x=max_x, max_z=max_z,
+                                                    min_x=min_x, min_z=min_z,
+                                                    connect_tools_surface=connect_tool_surface,
+                                                    connect_tool_all_non_fixed=connect_tool_all_non_fixed, kNN=kNN)
             
-            state_history = graph['state'][0].detach().cpu().numpy()
-            state_history = np.concatenate([state_history[1:], states[None]], axis=0)
+            if store_rest_state:
+                # The first time step (rest state) needs to stay in the history
+                state_history = graph['state'][1].detach().cpu().numpy()
+                tail = np.concatenate([state_history[2:], states[None]], axis=0)
+                state_history = np.concatenate([state_history[0], tail], axis=0)
+            else:
+                state_history = graph['state'][0].detach().cpu().numpy()
+                state_history = np.concatenate([state_history[1:], states[None]], axis=0)
             
             new_graph = {
                 "state": torch.from_numpy(state_history).unsqueeze(0).to(device).float(),  # (n_his, N+M, state_dim)
@@ -208,10 +267,11 @@ def rollout_from_start_graph(graph, fps_idx_list, dataset_config, material_confi
     return error_list
 
 def rollout_episode_pushes(model, device, dataset_config, material_config,
-                        eef_pos, obj_pos, episode_idx, pairs, physics_param,
+                        eef_pos, obj_pos, episode_idx, lowest_epi_num, pairs, physics_param,
                         save_dir, viz, imgs, cam_info, part_2_obj_inst, part_inv_weight_0,
                         keep_prev_fps, hetero):
     n_his = dataset_config['n_his']
+    store_rest_state = dataset_config['store_rest_state']
     
     ## get steps
     #pairs_path = os.path.join(dataset_config['prep_data_dir'], dataset_config['data_name']+"_set_action_first_try_100_epochs", 'frame_pairs')
@@ -232,23 +292,27 @@ def rollout_episode_pushes(model, device, dataset_config, material_config,
     print(f"pairs list: {pairs_list}")
     for i in range(num_steps):
         valid_pairs = np.loadtxt(pairs_list[i]).astype(int)
-        pair = valid_pairs[0] 
-        start = pair[n_his-1]
-        end = pair[n_his]
+        pair = valid_pairs[0]
+        if store_rest_state:
+            start = pair[n_his-1-1]
+            end = pair[n_his-1]
+        else:
+            start = pair[n_his-1]
+            end = pair[n_his]
         print(f"pair: {pair}, start: {start}, end: {end}")
         
-        eef_pos_epi = eef_pos[episode_idx] # (T, N_eef, 3)
-        obj_pos_epi = obj_pos[episode_idx] # (T, N_obj, 3)
+        eef_pos_epi = eef_pos[episode_idx-lowest_epi_num] # (T, N_eef, 3)
+        obj_pos_epi = obj_pos[episode_idx-lowest_epi_num] # (T, N_obj, 3)
         # Get particle to object instance mapping
         if part_2_obj_inst:
-            part_2_obj_inst_epi = part_2_obj_inst[episode_idx] # (T, N_obj, 1)
+            part_2_obj_inst_epi = part_2_obj_inst[episode_idx-lowest_epi_num] # (T, N_obj, 1)
             print(f"obj_pos_epi shape: {obj_pos_epi.shape}, part2obj shape: {part_2_obj_inst_epi.shape}")
         else:
             part_2_obj_inst_epi = None
     
         # get bool mask of particles that have inverse weight of 0
         if part_inv_weight_0:
-            part_inv_weight_0_epi = part_inv_weight_0[episode_idx] # (T, N_obj, 1)
+            part_inv_weight_0_epi = part_inv_weight_0[episode_idx-lowest_epi_num] # (T, N_obj, 1)
             print(f"particle inv weight is 0 shape: {part_inv_weight_0_epi.shape}")
         else:
             part_inv_weight_0_epi = None
@@ -257,7 +321,7 @@ def rollout_episode_pushes(model, device, dataset_config, material_config,
         graph, fps_idx_list, fps2phys = construct_graph(dataset_config, material_config, eef_pos_epi, obj_pos_epi,
                                         n_his, pair, physics_param, part_2_obj_inst=part_2_obj_inst_epi,
                                         prev_fps_idx_list=prev_fps_idx_list, fps2phys=fps2phys,
-                                        hetero=hetero)
+                                        hetero=hetero, store_rest_state=store_rest_state)
     
         # Use the same fps indices after the first sampling
         if keep_prev_fps:
@@ -304,7 +368,7 @@ def rollout_dataset(model, device, config, save_dir, viz, keep_prev_fps, hetero)
     material_config = config['material_config']
     
     ## load pair lists
-    pair_lists, physics_params = load_dataset(dataset_config, material_config, phase='valid')
+    pair_lists, physics_params, lowest_epi_num = load_dataset(dataset_config, material_config, phase='valid')
     pair_lists = np.array(pair_lists)
     print(f"Rollout dataset has {len(pair_lists)} frame pairs.")
     
@@ -323,8 +387,9 @@ def rollout_dataset(model, device, config, save_dir, viz, keep_prev_fps, hetero)
     ## get errors for each episode
     episode_idx_list = sorted(list(np.unique(pair_lists[:, 0]).astype(int))) # [7]
     for episode_idx in episode_idx_list:
+        print(f"episode idx: {episode_idx}, lowest_epi_num: {lowest_epi_num}")
         pair_lists_episode = pair_lists[pair_lists[:, 0] == episode_idx][:, 1:]
-        physics_params_episode = physics_params[episode_idx]
+        physics_params_episode = physics_params[episode_idx-lowest_epi_num]
         
         if viz:
             imgs, cam_info = extract_imgs(dataset_config, episode_idx, cam=0)
@@ -345,7 +410,7 @@ def rollout_dataset(model, device, config, save_dir, viz, keep_prev_fps, hetero)
         save_dir_episode_pushes = os.path.join(save_dir, f"{episode_idx}", "short")
         os.makedirs(save_dir_episode_pushes, exist_ok=True)
         error_list_short = rollout_episode_pushes(model, device, dataset_config, material_config,
-                                        eef_pos, obj_pos, episode_idx,
+                                        eef_pos, obj_pos, episode_idx, lowest_epi_num,
                                         pair_lists_episode, physics_params_episode,
                                         save_dir_episode_pushes, viz, imgs, cam_info, part_2_obj_inst, 
                                         part_inv_weight_0,

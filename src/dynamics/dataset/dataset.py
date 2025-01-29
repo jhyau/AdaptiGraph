@@ -26,6 +26,7 @@ class DynDataset(Dataset):
         ## general info
         self.n_his = self.dataset_config['n_his']
         self.n_future = self.dataset_config['n_future']
+        self.store_rest_state = self.dataset_config['store_rest_state']
         
         self.add_randomness = self.dataset_config['randomness']['use']
         self.state_noise = self.dataset_config['randomness']['state_noise'][self.phase]
@@ -43,6 +44,17 @@ class DynDataset(Dataset):
         self.max_nR = self.dataset['max_nR']
         self.adj_radius_range = self.dataset['adj_radius_range']
         self.topk = self.dataset['topk']
+        # kNN for tool to object relations
+        self.knn_range = self.dataset['knn_range']
+        if "min_knn" in self.dataset:
+            self.min_kNN = self.dataset['min_knn']
+        else:
+            self.min_kNN = 1.0
+        if "knn_increment" in self.dataset:
+            self.knn_increment = self.dataset['knn_increment']
+        else:
+            self.knn_increment = 0.1
+        # type of tool to object connection
         self.connect_tool_all = self.dataset['connect_tool_all']
         self.connect_tool_all_non_fixed = self.dataset['connect_tool_all_non_fixed']
         if "connect_tool_surface" in self.dataset:
@@ -56,7 +68,7 @@ class DynDataset(Dataset):
         # load data pairs, all object particles and determined by eef delta position
         # pair_list: (T, 8), [episode_idx (0), pair (1:8)]
         # physics_params: (n_epis, phys_dim)
-        self.pair_lists, self.physics_params = load_dataset(dataset_config, material_config, phase) 
+        self.pair_lists, self.physics_params, self.lowest_epi_num = load_dataset(dataset_config, material_config, phase) 
         self.pair_lists = np.array(self.pair_lists)
         print(f'Length of dataset is {self.pair_lists.shape}. \n')
         
@@ -68,7 +80,7 @@ class DynDataset(Dataset):
         # eef_pos: (n_epis, T, N_eef, 3)
         # obj_pos: (n_epis, T, N_obj, 3)
         if not lazy_loading:
-            print(f"lazy loading: {lazy_loading}. Loading full dataset into memory...")
+            print(f"not lazy loading: {lazy_loading}. Loading full dataset into memory...")
             self.eef_pos, self.obj_pos = load_positions(dataset_config)
             self.pos_dim = self.obj_pos[0].shape[-1]
             # get dimensions
@@ -84,6 +96,14 @@ class DynDataset(Dataset):
             print("all particle position paths: ", self.positions_paths)
             # get dimensions
             self.eef_dim = self.eef_pos_0.shape[1]
+
+        ## Save the "rest" state of the object at time step 0 for each episode
+        # obj_rest_states: (n_epis, N_obj, 3)
+        #self.obj_rest_states = self.obj_pos[:, 0, :, :]
+        # TODO: For now, to maintain n_his for eef as well. Later see if there's a way to remove this
+        # eef_rest_states: (n_epis, N_eef, 3)
+        #self.eef_rest_states = self.eef_pos[:, 0, :, :]
+        #print(f"object particle rest states size: {self.obj_rest_states.shape}, eef rest state size: {self.eef_rest_states.shape}")
         
         # get dimensions
         self.obj_dim = self.max_nobj
@@ -97,7 +117,10 @@ class DynDataset(Dataset):
     def __getitem__(self, idx):
         episode_idx = self.pair_lists[idx][0].astype(int)
         pair = self.pair_lists[idx][1:].astype(int)
-        assert len(pair) == self.n_his + self.n_future
+        if self.store_rest_state:
+            assert len(pair) == self.n_his - 1 + self.n_future
+        else:
+            assert len(pair) == self.n_his + self.n_future
 
         if self.lazy_loading:
             # Do lazy loading instead, only load in the particle positions when needed instead of all at once
@@ -108,6 +131,10 @@ class DynDataset(Dataset):
         ## get history keypoints
         obj_kps = []
         eef_kps = []
+        # Store the "rest" position at time step 0 first before the history of steps
+        if self.store_rest_state:
+            obj_kps.append(self.obj_pos[episode_idx][0])
+            eef_kps.append(self.eef_pos[episode_idx][0])
         for i in range(len(pair)):
             frame_idx = pair[i]
             # eef keypoints
@@ -148,6 +175,7 @@ class DynDataset(Dataset):
         
         ## load history states
         # state_history: (n_his, N_obj + N_eef, 3)
+        ## Keep "rest" state (the positions and info at time 0) in state history: (n_his+1, N_obj + N_eef, 3)
         max_y = 0
         min_y = 0
         max_x = 0
@@ -208,6 +236,7 @@ class DynDataset(Dataset):
         
         ## construct attrs
         # TODO: change to include more than one object, start with 2 or 3 objects like obj1 + obj2 + eef
+        # Node attribute: indicate whether particle belongs to object or eef
         # attr_dim: (N_obj + N_eef, 2)
         attr_dim = 2 # object + eef
         attrs = np.zeros((self.state_dim, attr_dim), dtype=np.float32)
@@ -266,13 +295,51 @@ class DynDataset(Dataset):
         ## construct edges
         # Rr, Rs: (n_rel, N)
         adj_thresh = np.random.uniform(*self.adj_radius_range)
+        if self.min_kNN < 1.0:
+            knn_thresh = np.random.uniform(*self.knn_range)
+        else:
+            knn_thresh = 1.0
+        print(f"knn_thresh: {knn_thresh}")
         Rr, Rs = construct_edges_from_states(state_history[-1], adj_thresh, state_mask, eef_mask, 
                                              self.topk, self.connect_tool_all, max_y=max_y, min_y=min_y,
                                              max_x=max_x, max_z=max_z,
                                              connect_tools_surface=self.connect_tool_surface,
-                                             connect_tool_all_non_fixed=self.connect_tool_all_non_fixed)
-        Rr = pad_torch(Rr, self.max_nR)
-        Rs = pad_torch(Rs, self.max_nR)
+                                             connect_tool_all_non_fixed=self.connect_tool_all_non_fixed, kNN=knn_thresh)
+        # Rr = pad_torch(Rr, self.max_nR)
+        # Rs = pad_torch(Rs, self.max_nR)
+        exceed_max_nR = True
+        kNN = knn_thresh #1.0
+        decrease_topK = self.topk
+        while(exceed_max_nR):
+            # If edge construction exceeds the max allowed edges, first decrease kNN of tool to object connections
+            # if that's not sufficient then increase the topK for edge connections
+            try:
+                Rr = pad_torch(Rr, self.max_nR)
+                Rs = pad_torch(Rs, self.max_nR)
+                exceed_max_nR = False
+            except Exception as e:
+                # Exception due to exceeding the max threshold
+                exceed_max_nR = True
+
+                # Reduce num of edges in the graph
+                if kNN <= self.min_kNN:
+                    # We can no longer further reduce the tool to object connections
+                    # raise Exception for this case, or start reducing the degrees of edges for each node by increasing topK
+                    print(f"!!!!!!!!!!!!!kNN has reached minimum of {self.min_kNN}!!!!!!!")
+                    decrease_topK = decrease_topK - 1
+                    Rr, Rs = construct_edges_from_states(state_history[-1], adj_thresh, state_mask, eef_mask, 
+                                             decrease_topK, self.connect_tool_all, max_y=max_y, min_y=min_y,
+                                             max_x=max_x, max_z=max_z,
+                                             connect_tools_surface=self.connect_tool_surface,
+                                             connect_tool_all_non_fixed=self.connect_tool_all_non_fixed, kNN=kNN)
+                else:
+                    kNN = kNN - self.knn_increment
+                    print(f"reducing kNN to {kNN}")
+                    Rr, Rs = construct_edges_from_states(state_history[-1], adj_thresh, state_mask, eef_mask, 
+                                                self.topk, self.connect_tool_all, max_y=max_y, min_y=min_y,
+                                                max_x=max_x, max_z=max_z,
+                                                connect_tools_surface=self.connect_tool_surface,
+                                                connect_tool_all_non_fixed=self.connect_tool_all_non_fixed, kNN=kNN)
         
         ## save graph
         graph = {

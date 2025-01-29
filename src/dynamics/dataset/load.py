@@ -3,9 +3,11 @@ import glob
 import numpy as np
 import pickle
 
-def load_pairs(pairs_path, episode_range):
+def load_pairs(pairs_path, episode_range, lowest_num=0):
     pair_lists = []
     for episode_idx in episode_range:
+        # Increment episode index by the lowest starting episode number
+        episode_idx = episode_idx + lowest_num
         n_pushes = len(list(glob.glob(os.path.join(pairs_path, f'{episode_idx:06}_*.txt'))))
         for push_idx in range(1, n_pushes+1):
             frame_pairs = np.loadtxt(os.path.join(pairs_path, f'{episode_idx:06}_{push_idx:02}.txt'))
@@ -32,8 +34,11 @@ def load_dataset(dataset_config, material_config, phase='train'):
     print(f"prep_dir for loading dataset: {prep_dir}")
     
     # episodes
-    num_epis = len(sorted([f for f in os.listdir(data_dir) if os.path.isdir(os.path.join(data_dir, f)) and f.isdigit()]))
-    print(f"Found number of episodes: {num_epis}.")
+    epi_names = sorted([f for f in os.listdir(data_dir) if os.path.isdir(os.path.join(data_dir, f)) and f.isdigit()])
+    lowest_num = int(epi_names[0])
+    num_epis = len(epi_names)
+    #num_epis = len(sorted([f for f in os.listdir(data_dir) if os.path.isdir(os.path.join(data_dir, f)) and f.isdigit()]))
+    print(f"Found number of episodes: {num_epis}. Lowest epi num: {lowest_num}")
     
     # load data pairs
     episode_range_phase = range(
@@ -41,12 +46,13 @@ def load_dataset(dataset_config, material_config, phase='train'):
         int(num_epis * ratio[phase][1])
     )
     pairs_path = os.path.join(prep_dir, 'frame_pairs')
-    pair_lists = load_pairs(pairs_path, episode_range_phase)
+    pair_lists = load_pairs(pairs_path, episode_range_phase, lowest_num)
     print(f'{phase} dataset has {len(list(episode_range_phase))} episodes, {len(pair_lists)} frame pairs')
     
     # load physics params
     physics_params = []
     for episode_idx in range(num_epis):
+        episode_idx = episode_idx + lowest_num
         physics_path = os.path.join(data_dir, f"{episode_idx:06}/property_params.pkl")
         with open(physics_path, 'rb') as f:
             properties = pickle.load(f)
@@ -73,7 +79,7 @@ def load_dataset(dataset_config, material_config, phase='train'):
         physics_params.append(physics_params_episode)
         print("loaded physics params: ", physics_params)
     
-    return pair_lists, physics_params
+    return pair_lists, physics_params, lowest_num
 
 def get_position_paths(dataset_config):
     # Only save the paths to each episode and lazily load it in when needed

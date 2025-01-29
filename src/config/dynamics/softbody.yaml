@@ -2,13 +2,14 @@ dataset_config:
   data_name: "softbody"
   data_folder: "epi-100-xz-scale-10-13-y-scale-10-18-vary-og-global-stiff-cluster-spacing-softbody-cubes-flatboard-poke-and-retreat-center-dist-thres-0-1"
   #output_name: "y-trans-x-rot-90-flatboard-softbody-cylinder-damping-2-deep-poke-then-lift-s-m-e-e-m-s-waypoints"
-  #output_name: "train-50-70-epi-100-damping-2-flatboard-softbody-cubes-deeper-poke-and-lift-s-m-e-e-m-s-waypoints"
+  #output_name: "max-nR-3500-pstep-4-nhis-5-store-rest-state-epi-100-xz-scale-10-13-y-scale-10-18-vary-og-global-stiff-cluster-spacing-softbody-cubes-flatboard-poke-and-retreat-center-dist-thres-0-1"
   #data_folder: "epi-100-damping-2-flatboard-softbody-cubes-deeper-poke-and-lift-s-m-e-e-m-s-waypoints"
   #data_folder: "epi-20-xz-scale-10-13-y-scale-10-18-vary-og-global-stiff-cluster-spacing-softbody-cubes-flatboard-poke-and-retreat-center-dist-thres-0-1"
   #data_folder: "epi-10-xz-scale-10-13-y-scale-10-18-og-stiff-0-5-to-1-softbody-cubes-flatboard-poke-and-retreat-center-dist-thres-0-1"
-  #output_name: "increase-cluster-rad-decrease-cluster-space-small-softbody-cubes-flatboard-poke-and-lift"
   #data_folder: "epi-5-smaller-actual-similar-size-softbody-cubes-flatboard-deeper-poke-and-lift"
-  output_name: "max-nobj-300-connect-tool-all-non-fixed-pstep-4-epi-100-xz-scale-10-13-y-scale-10-18-vary-og-global-stiff-cluster-spacing-softbody-cubes-flatboard-poke-and-retreat-center-dist-thres-0-1"
+  #output_name: "max-nobj-300-connect-tool-all-non-fixed-pstep-4-train-epi-100-xz-scale-10-13-y-scale-10-18-vary-og-global-stiff-cluster-spacing-softbody-cubes-flatboard-poke-and-retreat-center-dist-thres-0-1"
+  output_name: "include-rest-state-kNN-tool-to-object-epi-100-xz-scale-10-13-y-scale-10-18-vary-og-global-stiff-cluster-spacing-softbody-cubes-flatboard-poke-and-retreat-center-dist-thres-0-1"
+  #data_folder: "mini-test-set-base-101-for-epi-100-xz-scale-10-13-y-scale-10-18-vary-og-global-stiff-cluster-spacing-softbody-cubes-flatboard-poke-and-retreat-center-dist-thres-0-1"
   #output_name: "testing-tool-to-all-non-fixed-obj-particles-cut-off-xpad"
   materials: ["softbody"]
   #data_dir: "../sim_data" # data directory
@@ -19,9 +20,12 @@ dataset_config:
 
   verbose: False
   # preprocess
-  n_his: 4
+  n_his: 5 #4
   n_future: 3
   dist_thresh: 0.1 # 1.0cm
+
+  # history kps
+  store_rest_state: True
 
   ratio:
     #train: [0, 0.9]
@@ -30,6 +34,8 @@ dataset_config:
     valid: [0.98, 1]
     #train: [0, 0]
     #valid: [0, 1]
+    #train: [0, 0]
+    #valid: [0.2, 0.4]
 
   eef:
     #max_neef: 1
@@ -40,7 +46,7 @@ dataset_config:
     #pos: [[0., -0.2, 0.6],
     #      [0., 0.2, 0.6]]
     # For flatboard pusher
-    max_neef: 5
+    max_neef: 5 # TODO: increase to better represent shape of flatboard
     name: ['flat_pusher']
     pos: [[0.5, 0.045, 1.25],
           [-0.5, 0.045, 1.25],
@@ -69,6 +75,9 @@ dataset_config:
       connect_tool_surface: False
       connect_tool_surface_ratio: 1.0
       connect_tool_all_non_fixed: True
+      knn_range: [0.4, 1.0]
+      min_knn: 0.4
+      knn_increment: 0.1
   
   randomness: 
     use: False

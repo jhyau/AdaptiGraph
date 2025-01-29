@@ -6,13 +6,13 @@ dataset:
   #save_dir: "epi-20-damping-2-flatboard-softbody-cubes-deeper-forward-poke-s-m-e-e-waypoints"
   #save_dir: "epi-100-damping-2-flatboard-softbody-cubes-deeper-poke-and-lift-s-m-e-e-m-s-waypoints"
   #save_dir: "epi-20-xz-scale-10-13-y-scale-10-18-vary-og-global-stiff-cluster-spacing-softbody-cubes-flatboard-poke-and-retreat-center-dist-thres-0-1"
-  save_dir: "epi-100-xz-scale-10-13-y-scale-10-18-vary-og-global-stiff-cluster-spacing-softbody-cubes-flatboard-poke-and-retreat-center-dist-thres-0-1"
+  #save_dir: "epi-100-xz-scale-10-13-y-scale-10-18-vary-og-global-stiff-cluster-spacing-softbody-cubes-flatboard-poke-and-retreat-center-dist-thres-0-1"
   #save_dir: "epi-5-smaller-actual-similar-size-softbody-cubes-flatboard-deeper-poke-and-lift"
-  #save_dir: "increase-cluster-rad-decrease-cluster-space-small-softbody-cubes-flatboard-poke-and-lift"
+  save_dir: "mini-test-set-base-101-for-epi-100-xz-scale-10-13-y-scale-10-18-vary-og-global-stiff-cluster-spacing-softbody-cubes-flatboard-poke-and-retreat-center-dist-thres-0-1"
 
   # data collection
-  base: 0 #37
-  n_episode: 100 #1000
+  base: 101 #37
+  n_episode: 106 #1000
   n_timestep: 10
   n_worker: 2
   

@@ -67,7 +67,7 @@ def conditions_for_tool_to_surface(plane_name, max_y, max_x, max_z, min_x, min_z
 
 def construct_edges_from_states(states, adj_thresh, mask, tool_mask, topk=10, connect_tools_all=False, 
                                 max_y=None, min_y = None, max_x=None, max_z=None, min_x=None, min_z=None,
-                                connect_tools_surface=False, connect_tool_all_non_fixed=True):
+                                connect_tools_surface=False, connect_tool_all_non_fixed=True, kNN=1.0):
     # :param states: (N, state_dim) torch tensor
     # :param adj_thresh: float
     # :param mask: (N) torch tensor, true when index is a valid particle
@@ -99,8 +99,8 @@ def construct_edges_from_states(states, adj_thresh, mask, tool_mask, topk=10, co
     obj_tool_mask_2 = tool_mask_2 * mask_1  # particle receiver, tool sender
         
     adj_matrix = ((dis - threshold) < 0).float()
-    print(f"shape of adjacency matrix: {adj_matrix.size()}")
-    print(f"unique elems in adj: {torch.unique(adj_matrix)}")
+    # print(f"shape of adjacency matrix: {adj_matrix.size()}")
+    # print(f"unique elems in adj: {torch.unique(adj_matrix)}")
     # print(f"shape of dis: {dis.size()}")
     # print(f"shape of s_receiv: {s_receiv.size()}")
     # print(f"s_receiv: \n{s_receiv}")
@@ -112,16 +112,18 @@ def construct_edges_from_states(states, adj_thresh, mask, tool_mask, topk=10, co
     topk_matrix.scatter_(-1, topk_idx, 1)
     adj_matrix = adj_matrix * topk_matrix
     print(f"after topk shape of adjacency matrix: {adj_matrix.size()}, dtype: {adj_matrix.dtype}")
-    print(f"topk matrix size: {topk_matrix.size()}, sum: {torch.sum(topk_matrix)}")
-    print(f"after topk unique elems in adj: {torch.unique(adj_matrix)}")
+    print(f"topk matrix size: {topk_matrix.size()}, sum: {torch.sum(topk_matrix)}, dtype: {topk_matrix.dtype}")
+    print(f"dis dtype: {dis.dtype}")
+    # print(f"after topk unique elems in adj: {torch.unique(adj_matrix)}")
 
     if connect_tools_all:
         adj_matrix[obj_tool_mask_1] = 0
         adj_matrix[obj_tool_mask_2] = 1
         adj_matrix[tool_mask_12] = 0  # avoid tool to tool relations
         # print(f"after connect_tools_all: \n{adj_matrix}")
-    
+
     if connect_tool_all_non_fixed and max_y is not None and min_y is not None:
+        ## Connect tool to all non-fixed object particles
         ## Determine if there are any adjacent points for particle receiver, tool sender
         adj_tool_sender = adj_matrix[obj_tool_mask_2.to("cpu")]
         check = torch.sum(adj_tool_sender)
@@ -145,21 +147,34 @@ def construct_edges_from_states(states, adj_thresh, mask, tool_mask, topk=10, co
             print(f"obj_tool_mask1 true: {torch.sum(obj_tool_mask_1)}")
             print(f"obj_tool_mask2 true: {torch.sum(obj_tool_mask_2)}")
             print(f"surf_obj_tool_mask_1 true: {torch.sum(surf_obj_tool_mask_1)}")
-            print(f"surf_obj_tool_mask_2 true: {torch.sum(surf_obj_tool_mask_2)}")
+            max_obj_receiv_tool_send_rels = int(torch.sum(surf_obj_tool_mask_2))
+            print(f"surf_obj_tool_mask_2 true: {max_obj_receiv_tool_send_rels}")
             adj_matrix[surf_obj_tool_mask_1] = 0
             adj_matrix[surf_obj_tool_mask_2] = 1
+
+            if kNN < 1.0 and kNN > 0.0:
+                ## Connect tool to non-fixed object particles within k-Nearest neighbors, by some percent
+                # Find the distance of each non-fixed object particle (receiver) to tool (sender)
+                # Keep the closest kNN percent of them, sort the distance in ascending order
+                keepK = int(kNN * max_obj_receiv_tool_send_rels)
+                print(f"--------------------reducing kNN for connect tool to non-fixed obj particles------------------------")
+                print(f"Max tool to non-fixed obj particles: {max_obj_receiv_tool_send_rels}, kNN: {kNN}, keepK: {keepK}")
+                keepK_idx = torch.topk(dis[surf_obj_tool_mask_2.to("cpu")], k=keepK, dim=-1, largest=False)[1]
+                keepK_matrix = torch.zeros_like(dis[surf_obj_tool_mask_2.to("cpu")])
+                keepK_matrix.scatter_(-1, keepK_idx, 1)
+                print(f"unique elems in keepK matrix: {torch.unique(keepK_matrix)}")
+                print(f"Num true in keepK matrix: {torch.sum(keepK_matrix)}")
+                print(f"adj matrix type: {adj_matrix.dtype}, keepK matrix type: {keepK_matrix.dtype}")
+                print(f"adj matrix device: {adj_matrix.get_device()}, surface indices device: {surf_obj_tool_mask_2.get_device()}, keepK indices dev: {keepK_idx.get_device()}")
+                adj_matrix[surf_obj_tool_mask_2.to("cpu")] = adj_matrix[surf_obj_tool_mask_2.to("cpu")] * keepK_matrix.float()
             adj_matrix[tool_mask_12] = 0  # avoid tool to tool relations
-            print(f"after connect tool to all non-fixed particles shape of adjacency matrix: {adj_matrix.size()}")
-            print(f"after connect tool to all non-fixed particles shape unique elems in adj: {torch.unique(adj_matrix)}")
+            print(f"adj matrix true: {torch.sum(adj_matrix)}")
+            # print(f"after connect tool to all non-fixed particles shape of adjacency matrix: {adj_matrix.size()}")
+            # print(f"after connect tool to all non-fixed particles shape unique elems in adj: {torch.unique(adj_matrix)}")
     
     if connect_tools_surface and max_y is not None and max_x is not None and min_x is not None and max_z is not None and min_z is not None:
-        # TODO: determine closest "surface" based on x, y, or z axis
+        # Determine closest "surface" based on x, y, or z axis with k-NN, like above
         ## Only attach tool when there is at least one connection between object and tool particles based on distance threshold
-        # print(tool_mask_1.is_cuda)
-        # print(tool_mask_2.is_cuda)
-        # print(mask_1.is_cuda)
-        # print(s_receiv.is_cuda)
-        # print((s_receiv[:,:,1] >= max_y).is_cuda)
         print(f"max_y: {max_y}, min_x: {min_x}, max_x: {max_x}, min_z: {min_z}, max_z: {max_z}")
         ## Determine if there are any adjacent points for particle receiver, tool sender
         adj_tool_sender = adj_matrix[obj_tool_mask_2.to("cpu")]
@@ -188,43 +203,9 @@ def construct_edges_from_states(states, adj_thresh, mask, tool_mask, topk=10, co
             if dev >= 0:
                 surface_mask_receive = (receive_cond_1 *receive_cond_2).to(dev) * mask_1
                 surface_mask_send = (send_cond_1 * send_cond_2).to(dev) * mask_2
-                # if plane_name == "max_y":
-                #     surface_mask_receive = (s_receiv[:,:,1] >= max_y).to(dev) * mask_1
-                #     surface_mask_send = (s_sender[:,:,1] >= max_y).to(dev) * mask_2
-                # elif plane_name == "max_x":
-                #     surface_mask_receive = (s_receiv[:,:,0] >= max_x).to(dev) * mask_1
-                #     surface_mask_send = (s_sender[:,:,0] >= max_x).to(dev) * mask_2
-                # elif plane_name == "max_z":
-                #     surface_mask_receive = (s_receiv[:,:,2] >= max_z).to(dev) * mask_1
-                #     surface_mask_send = (s_sender[:,:,2] >= max_z).to(dev) * mask_2
-                # elif plane_name == "min_x":
-                #     surface_mask_receive = (s_receiv[:,:,0] <= min_x).to(dev) * mask_1
-                #     surface_mask_send = (s_sender[:,:,0] <= min_x).to(dev) * mask_2
-                # elif plane_name == "min_z":
-                #     surface_mask_receive = (s_receiv[:,:,2] <= min_z).to(dev) * mask_1
-                #     surface_mask_send = (s_sender[:,:,2] <= min_z).to(dev) * mask_2
-                # else:
-                #     raise Exception("Unknown plane for connecting tool to surface object particles!!")
             else:
                 surface_mask_receive = (receive_cond_1 * receive_cond_2) * mask_1
                 surface_mask_send = (send_cond_1 * send_cond_2) * mask_2
-                # if plane_name == "max_y":
-                #     surface_mask_receive = (s_receiv[:,:,1] >= max_y) * mask_1
-                #     surface_mask_send = (s_sender[:,:,1] >= max_y) * mask_2
-                # elif plane_name == "max_x":
-                #     surface_mask_receive = (s_receiv[:,:,0] >= max_x) * mask_1
-                #     surface_mask_send = (s_sender[:,:,0] >= max_x) * mask_2
-                # elif plane_name == "max_z":
-                #     surface_mask_receive = (s_receiv[:,:,2] >= max_z) * mask_1
-                #     surface_mask_send = (s_sender[:,:,2] >= max_z) * mask_2
-                # elif plane_name == "min_x":
-                #     surface_mask_receive = (s_receiv[:,:,0] <= min_x) * mask_1
-                #     surface_mask_send = (s_sender[:,:,0] <= min_x) * mask_2
-                # elif plane_name == "min_z":
-                #     surface_mask_receive = (s_receiv[:,:,2] <= min_z) * mask_1
-                #     surface_mask_send = (s_sender[:,:,2] <= min_z) * mask_2
-                # else:
-                #     raise Exception("Unknown plane for connecting tool to surface object particles!!")
             surf_obj_tool_mask_1 = tool_mask_1 * surface_mask_send  # particle sender, tool receiver
             surf_obj_tool_mask_2 = tool_mask_2 * surface_mask_receive  # particle receiver, tool sender
             print(f"obj_tool_mask1 shape: {obj_tool_mask_1.size()}")

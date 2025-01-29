@@ -297,21 +297,24 @@ def visualize_graph(imgs, cam_info,
     gt_kp_proj_last.append(obj_kp_proj)
 
     # visualize edges (for gt, edges will not reflect adjacency)
+    # for gt don't show the tool to object connections
     for k in range(Rr.shape[0]):
         if Rr[k].sum() == 0: continue
         receiver = Rr[k].argmax()
         sender = Rs[k].argmax()
-        if receiver >= max_nobj:  # tool
-            cv2.line(img, 
-                (int(tool_kp_proj[receiver - max_nobj, 0]), int(tool_kp_proj[receiver - max_nobj, 1])), 
-                (int(gt_kp_proj[sender, 0]), int(gt_kp_proj[sender, 1])), 
-                (0, 0, 255), edge_size)
-        elif sender >= max_nobj:  # tool
-            cv2.line(img, 
-                (int(tool_kp_proj[sender - max_nobj, 0]), int(tool_kp_proj[sender - max_nobj, 1])), 
-                (int(gt_kp_proj[receiver, 0]), int(gt_kp_proj[receiver, 1])), 
-                (0, 0, 255), edge_size)
-        else:
+        # if receiver >= max_nobj:  # tool
+        #     cv2.line(img, 
+        #         (int(tool_kp_proj[receiver - max_nobj, 0]), int(tool_kp_proj[receiver - max_nobj, 1])), 
+        #         (int(gt_kp_proj[sender, 0]), int(gt_kp_proj[sender, 1])), 
+        #         (0, 0, 255), edge_size)
+        # elif sender >= max_nobj:  # tool
+        #     cv2.line(img, 
+        #         (int(tool_kp_proj[sender - max_nobj, 0]), int(tool_kp_proj[sender - max_nobj, 1])), 
+        #         (int(gt_kp_proj[receiver, 0]), int(gt_kp_proj[receiver, 1])), 
+        #         (0, 0, 255), edge_size)
+        # else:
+        if receiver < max_nobj and sender < max_nobj:
+            # object to object particle connection
             cv2.line(img, 
                 (int(gt_kp_proj[receiver, 0]), int(gt_kp_proj[receiver, 1])), 
                 (int(gt_kp_proj[sender, 0]), int(gt_kp_proj[sender, 1])), 
@@ -336,7 +339,8 @@ def visualize_graph(imgs, cam_info,
 
 
 def construct_graph(dataset_config, material_config, eef_pos, obj_pos,
-                    n_his, pair, physics_param, part_2_obj_inst=None, prev_fps_idx_list=None, fps2phys=None, hetero=False):
+                    n_his, pair, physics_param, part_2_obj_inst=None, prev_fps_idx_list=None, fps2phys=None, hetero=False,
+                    store_rest_state=False):
     print("constructing graph for rollout...")
     # prev_fps_idx_list will not be None if using the same FPS indices for all time steps. It's the list of FPS indices
     # fps2phys will not be None if using prev_fps_idx_list, it will map each fps idx to phys param once (sorts by z,x,y)
@@ -347,6 +351,15 @@ def construct_graph(dataset_config, material_config, eef_pos, obj_pos,
     fps_radius = (dataset['fps_radius_range'][0] + dataset['fps_radius_range'][1]) / 2
     adj_thresh = (dataset['adj_radius_range'][0] + dataset['adj_radius_range'][1]) / 2
     topk = dataset['topk']
+    knn_thresh = (dataset['knn_range'][0] + dataset['knn_range'][1]) / 2
+    if "min_knn" in dataset:
+        min_kNN = dataset['min_knn']
+    else:
+        min_kNN = 1.0
+    if "knn_increment" in dataset:
+        knn_increment = dataset['knn_increment']
+    else:
+        knn_increment = 0.1
     connect_tool_all = dataset['connect_tool_all']
     connect_tool_all_non_fixed = dataset['connect_tool_all_non_fixed']
     if "connect_tool_surface" in dataset:
@@ -369,6 +382,10 @@ def construct_graph(dataset_config, material_config, eef_pos, obj_pos,
     # eef are probably the end effector's key points
     obj_kps = []
     eef_kps = []
+    if store_rest_state:
+        # If storing rest state, do so
+        obj_kps.append(obj_pos[0])
+        eef_kps.append(eef_pos[0])
     for i in range(len(pair)):
         frame_idx = pair[i]
         # eef keypoints
@@ -485,12 +502,41 @@ def construct_graph(dataset_config, material_config, eef_pos, obj_pos,
 
     # construct relations (density as hyperparameter)
     Rr, Rs = construct_edges_from_states(state_history[-1], adj_thresh, state_mask, eef_mask,
-                                         topk, connect_tool_all, max_y=max_y, min_y=min_y, max_x=max_x, max_z=max_z,
-                                         min_x=min_x, min_z=min_z,
-                                         connect_tools_surface=connect_tool_surface,
-                                         connect_tool_all_non_fixed=connect_tool_all_non_fixed)
-    Rr = pad_torch(Rr, max_nR)
-    Rs = pad_torch(Rs, max_nR)
+                                        topk, connect_tool_all, max_y=max_y, min_y=min_y, max_x=max_x, max_z=max_z,
+                                        min_x=min_x, min_z=min_z,
+                                        connect_tools_surface=connect_tool_surface,
+                                        connect_tool_all_non_fixed=connect_tool_all_non_fixed, kNN=knn_thresh)
+    exceed_max_nR = True
+    decrease_topK = topk
+    kNN = knn_thresh #1.0
+    while(exceed_max_nR):
+        # If edge construction exceeds the max allowed edges, start reducing edges first from tool to object connections, then by topk
+        try:
+            Rr = pad_torch(Rr, max_nR)
+            Rs = pad_torch(Rs, max_nR)
+            exceed_max_nR = False
+        except Exception as e:
+            # Exception due to exceeding the max threshold
+            exceed_max_nR = True
+            if kNN <= min_kNN:
+                # We can no longer further reduce the tool to object connections
+                # raise Exception for this case, or start reducing the degrees of edges for each node by increasing topK
+                print(f"!!!!!!!!!!!!!kNN has reached minimum of {min_kNN}!!!!!!!")
+                decrease_topK = decrease_topK - 1
+                Rr, Rs = construct_edges_from_states(state_history[-1], adj_thresh, state_mask, eef_mask,
+                                            decrease_topK, connect_tool_all, max_y=max_y, min_y=min_y, max_x=max_x, max_z=max_z,
+                                            min_x=min_x, min_z=min_z,
+                                            connect_tools_surface=connect_tool_surface,
+                                            connect_tool_all_non_fixed=connect_tool_all_non_fixed, kNN=kNN)
+            # Reduce adjacency threshold to reduce resolution of graph (fewer edges)
+            else:
+                kNN = kNN - knn_increment
+                print(f"reducing kNN to {kNN}")
+                Rr, Rs = construct_edges_from_states(state_history[-1], adj_thresh, state_mask, eef_mask,
+                                            topk, connect_tool_all, max_y=max_y, min_y=min_y, max_x=max_x, max_z=max_z,
+                                            min_x=min_x, min_z=min_z,
+                                            connect_tools_surface=connect_tool_surface,
+                                            connect_tool_all_non_fixed=connect_tool_all_non_fixed, kNN=kNN)
 
     # save graph
     graph = {
@@ -592,11 +638,12 @@ def construct_graph(dataset_config, material_config, eef_pos, obj_pos,
         #graph[material_name + "_physics_param"] = physics_param[material_name] + torch.tensor([physics_param_shift])
 
     # print(f"new _physics_param: {graph[mat+'_physics_param']}, size: {graph[mat+'_physics_param'].size()}")
+    print(f"state_history size: {state_history.size()}")
     ### finish constructing graph ###
     print("graph keys: ", graph.keys())
     return graph, fps_idx_list, fps2phys
 
-def get_next_pair_or_break_episode(pairs, n_his, n_frames, current_end):
+def get_next_pair_or_break_episode(pairs, n_his, n_frames, current_end, store_rest_state=False):
     # find next pair
     valid_pairs = pairs[pairs[:, n_his-1] == current_end]
     # avoid loop
@@ -614,9 +661,11 @@ def get_next_pair_or_break_episode(pairs, n_his, n_frames, current_end):
     next_pair = valid_pairs[int(len(valid_pairs)/2)]  # pick the middle one
     return next_pair
 
-def get_next_pair_or_break_episode_pushes(pairs, n_his, n_frames, current_end):
+def get_next_pair_or_break_episode_pushes(pairs, n_his, n_frames, current_end, store_rest_state=False):
     # find next pair
     print("pairs: ", pairs.shape)
+    if store_rest_state:
+        n_his = n_his - 1
     valid_pairs = pairs[pairs[:, n_his-1] == current_end]
     print(f"num valid pairs: {len(valid_pairs)}, current_end: {current_end}, n_his: {n_his}")
     # avoid loop
