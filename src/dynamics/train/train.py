@@ -107,10 +107,12 @@ def train(config, lazy_loading):
                             next_action = future_action[:, fi].clone()  # (B, n_p+n_s, 3)
                             next_state = next_eef.unsqueeze(1)  # (B, 1, n_p+n_s, 3)
                             next_state[:, -1, :pred_state_p.shape[1]] = pred_state_p 
+                            print(f"data state size: {data['state'].size()}, next_state size: {next_state.size()}")
                             if store_rest_state:
-                                tail = torch.cat([data['state'][:, 2:], next_state], dim=1)
-                                next_state = torch.cat([data['state'][:, 0], tail], dim=1)  # (B, n_his, n_p+n_s, 3)
-                                print(f"Storing rest state, size of next_state: {next_state.size()}")
+                                tail = torch.cat([data['state'][:, 2:], next_state], dim=1) # (B, n_his-2, n_p+n_s, 3)
+                                print(f"tail size: {tail.size()}")
+                                next_state = torch.cat([data['state'][:, 0].unsqueeze(1), tail], dim=1)  # (B, n_his, n_p+n_s, 3)
+                                print(f"*****Storing rest state, size of next_state: {next_state.size()}")
                             else:
                                 next_state = torch.cat([data['state'][:, 1:], next_state], dim=1)  # (B, n_his, n_p+n_s, 3)
                                 print(f"Size of next_state: {next_state.size()}")
