@@ -34,6 +34,7 @@ def train(config, lazy_loading):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
     ## load dataset
+    store_rest_state = dataset_config['store_rest_state']
     n_future = dataset_config['n_future']
     phases = train_config['phases']
     
@@ -106,7 +107,13 @@ def train(config, lazy_loading):
                             next_action = future_action[:, fi].clone()  # (B, n_p+n_s, 3)
                             next_state = next_eef.unsqueeze(1)  # (B, 1, n_p+n_s, 3)
                             next_state[:, -1, :pred_state_p.shape[1]] = pred_state_p 
-                            next_state = torch.cat([data['state'][:, 1:], next_state], dim=1)  # (B, n_his, n_p+n_s, 3)
+                            if store_rest_state:
+                                tail = torch.cat([data['state'][:, 2:], next_state], dim=1)
+                                next_state = torch.cat([data['state'][:, 0], tail], dim=1)  # (B, n_his, n_p+n_s, 3)
+                                print(f"Storing rest state, size of next_state: {next_state.size()}")
+                            else:
+                                next_state = torch.cat([data['state'][:, 1:], next_state], dim=1)  # (B, n_his, n_p+n_s, 3)
+                                print(f"Size of next_state: {next_state.size()}")
                             data["state"] = next_state  # (B, n_his, N+M, state_dim)
                             data["action"] = next_action  # (B, N+M, state_dim) 
 
