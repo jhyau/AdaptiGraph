@@ -453,6 +453,7 @@ def construct_graph(dataset_config, material_config, eef_pos, obj_pos,
     max_y = max_y * connect_tool_surface_ratio #0.8
     max_x = max_x * connect_tool_surface_ratio
     max_z = max_z * connect_tool_surface_ratio
+    print(f"size of state_history in graph construction: {state_history.shape}")
     
     ## load masks
     # state_mask: (N_obj + N_eef, )

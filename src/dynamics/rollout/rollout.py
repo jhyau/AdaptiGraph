@@ -222,9 +222,11 @@ def rollout_from_start_graph(graph, fps_idx_list, dataset_config, material_confi
             
             if store_rest_state:
                 # The first time step (rest state) needs to stay in the history
-                state_history = graph['state'][1].detach().cpu().numpy()
-                tail = np.concatenate([state_history[2:], states[None]], axis=0)
-                state_history = np.concatenate([state_history[0].unsqueeze(0), tail], axis=0)
+                print(f"size of graph states: {graph['state'].shape}")
+                state_history = graph['state'][0].detach().cpu().numpy() # (1, n_his, N+M, state_dim)
+                tail = np.concatenate([state_history[2:], states[None]], axis=0) # (n_his, N+M, state_dim)
+                state_history = np.concatenate([np.expand_dims(state_history[0], axis=0), tail], axis=0)
+                print(f"size of state_history after: {state_history.shape}, tail shape: {tail.shape}")
             else:
                 state_history = graph['state'][0].detach().cpu().numpy()
                 state_history = np.concatenate([state_history[1:], states[None]], axis=0)

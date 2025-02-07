@@ -589,6 +589,7 @@ class FlexEnv(gym.Env):
         eighth = ((first_quartile - min_y) / 2) + min_y
         bottom_tenth = (max_y - min_y) * (0.1) + min_y
         bottom_fifteenth = (max_y - min_y) * (0.15) + min_y
+        bottom_fifth = (max_y - min_y) * (0.2) + min_y
 
         # Determine push based on stiffness
         stiffness = physics_params['stiffness']
@@ -600,7 +601,7 @@ class FlexEnv(gym.Env):
             upper_threshold = max_y - (max_y - min_y) * STIFF_UPPER_LIMIT
         else:
             ## Soft case
-            lower_threshold = bottom_fifteenth
+            lower_threshold = bottom_fifth #bottom_fifteenth
             upper_threshold = max_y - (max_y - min_y) * SOFT_UPPER_LIMIT
             #upper_threshold = max_y
         chosen_points = []
@@ -623,6 +624,7 @@ class FlexEnv(gym.Env):
         for idx, (x, y, z) in enumerate(zip(pos_x, pos_y, pos_z)):
             # choose obj particles that are above the table
             # end effector point is at the top of the stick, not the bottom, so add self.stick_len back
+            # TODO: maybe also remove all points that are further down than the height of the flatboard?
             if np.sqrt((x-center_x)**2 + (y-center_y)**2 + (z-center_z)**2) < 2.0 and y >= self.wkspace_height:
                 if y >= lower_threshold and y < upper_threshold:
                     # Note that the particles that have inf weight are the bottom 10% y coordinate particles
