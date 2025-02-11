@@ -39,6 +39,9 @@ f.write(f"Data folder dir: {data_dir}\n")
 epi_list = sorted([f for f in os.listdir(data_dir) if os.path.isdir(os.path.join(data_dir, f)) and f.isdigit()])
 num_epis = len(epi_list)
 
+# Global stats on episodes with artifacts and number of actions of each episode
+epis_with_artifacts = {}
+
 # Iterate through all episodes
 for epi_idx, epi in tqdm(enumerate(epi_list)):
     print(f"----Episode: {epi}----")
@@ -77,6 +80,19 @@ for epi_idx, epi in tqdm(enumerate(epi_list)):
         if diff > THRES:
             f.write(f"Episode: {epi}, step/action: {step_idx}, max difference for same point at rest vs. at penultimate time step: {diff}\n")
             print(f"!!!!Flagging episode {epi}, action {step_idx} for max diff: {diff}")
+            if epi not in epis_with_artifacts:
+                epis_with_artifacts[epi] = 1
+            else:
+                epis_with_artifacts[epi] += 1
+
+# Print global stats
+f.write(f"========Final stats=========\n")
+print(f"Num episodes that have artifacts: {len(epis_with_artifacts)}")
+f.write(f"Num episodes that have artifacts: {len(epis_with_artifacts)}\n")
+
+for key in epis_with_artifacts:
+    print(f"Episode: {key} with num actions that are flagged: {epis_with_artifacts[key]}")
+    f.write(f"Episode: {key} with num actions that are flagged: {epis_with_artifacts[key]}\n")
 
 # Close file
 f.close()

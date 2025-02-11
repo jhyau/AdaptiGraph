@@ -637,7 +637,7 @@ class FlexEnv(gym.Env):
 
         x_or_z = np.random.rand()
         valid = False
-        DIST_FROM_CENTER_THRESHOLD = 0.1
+        DIST_FROM_CENTER_THRESHOLD = 0.1 # For stiff cases and pushes at the lower half of the object
         if x_or_z <= 0.5:
             ## Move along x-axis only for horizontal push
             for _ in range(1000):
@@ -672,7 +672,12 @@ class FlexEnv(gym.Env):
                         else:
                             x_start = np.random.uniform(max_x + 0.5, max_x + 2.0)
                     else:
-                        if np.random.rand() <= 0.5:
+                        ## Cannot push too deeply, if target point is close to center, that's ok
+                        # if np.random.rand() <= 0.5:
+                        #     x_start = np.random.uniform(min_x - 0.5, min_x - 2.0)
+                        # else:
+                        #     x_start = np.random.uniform(max_x + 0.5, max_x + 2.0)
+                        if min_to_point <= max_to_point:
                             x_start = np.random.uniform(min_x - 0.5, min_x - 2.0)
                         else:
                             x_start = np.random.uniform(max_x + 0.5, max_x + 2.0)
@@ -732,8 +737,13 @@ class FlexEnv(gym.Env):
                         else:
                             z_start = np.random.uniform(max_z + 0.5, max_z + 2.0)
                     else:
+                        ## Cannot push too deeply, if target point is close to center, that's ok
                         # Slightly deeper push ok for higher up
-                        if np.random.rand() <= 0.5:
+                        # if np.random.rand() <= 0.5:
+                        #     z_start = np.random.uniform(min_z - 0.5, min_z - 2.0)
+                        # else:
+                        #     z_start = np.random.uniform(max_z + 0.5, max_z + 2.0)
+                        if min_to_point <= max_to_point:
                             z_start = np.random.uniform(min_z - 0.5, min_z - 2.0)
                         else:
                             z_start = np.random.uniform(max_z + 0.5, max_z + 2.0)
@@ -798,6 +808,7 @@ class FlexEnv(gym.Env):
         #y_threshold = (1.0 - stiffness) * max_y
         if stiffness > 0.5:
             # stiffer cubes can do significantly shallower pokes
+            ## No vertical pokes for stiff cases (not much reaction to show)
             thres = ((1 - stiffness)/2) + stiffness
             y_threshold = max_y #thres * max_y
         else:
@@ -810,6 +821,8 @@ class FlexEnv(gym.Env):
         y_length = max_y - min_y
         surface_area = x_length * z_length
         print(f"******x_length: {x_length}, z_length: {z_length}, surface area: {surface_area}, y_length: {y_length}******")
+        ## Constant for height threshold
+        HEIGHT_THRES = 1.9
         #is_surface_poke = (np.random.uniform(0.0, 1.0) <= 0.1)
         #print(f"choosing a surface-level particle: {is_surface_poke}")
         for idx, (x, y, z) in enumerate(zip(pos_x, pos_y, pos_z)):
@@ -825,7 +838,7 @@ class FlexEnv(gym.Env):
                     # For cubes with larger surface area (bigger cubes) slightly reduce depth of poke
                     dist = np.absolute(y - max_y)
                     #if y <= center_y:
-                    if y_length >= 1.9:
+                    if y_length >= HEIGHT_THRES:
                         if y <= third_quartile and y >= first_quartile:
                             chosen_points.append(idx)
                     else:
@@ -868,10 +881,6 @@ class FlexEnv(gym.Env):
             #y_start = np.random.uniform(np.max(pos_y) + 2.0, np.max(pos_y) + 5.0)
             x_disturb = np.random.uniform(-0.5, 0.5)
             z_disturb = np.random.uniform(-0.5, 0.5)
-            #if (np.abs(x_disturb) > 0.5):
-                # larger x disturb --> higher y start
-            #    y_start = np.random.uniform(max_y + 0.5, max_y + 3.0)
-            #else:
             y_start = np.random.uniform(max_y + 0.5, max_y + 2.0)
             startpoint_pos_origin = np.array([obj_pos[0]+x_disturb, obj_pos[2]+z_disturb, y_start]).reshape(1,3)
             #startpoint_pos_origin = np.array([obj_pos[0], obj_pos[2], y_start]).reshape(1,3)
