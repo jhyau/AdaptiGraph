@@ -1,22 +1,23 @@
 dataset_config:
   data_name: "softbody"
-  data_folder: "epi-100-xz-scale-10-13-y-scale-10-18-vary-og-global-stiff-cluster-spacing-softbody-cubes-flatboard-poke-and-retreat-center-dist-thres-0-1"
+  #data_folder: "epi-100-xz-scale-10-13-y-scale-10-18-vary-og-global-stiff-cluster-spacing-softbody-cubes-flatboard-poke-and-retreat-center-dist-thres-0-1"
   #output_name: "y-trans-x-rot-90-flatboard-softbody-cylinder-damping-2-deep-poke-then-lift-s-m-e-e-m-s-waypoints"
   #output_name: "max-nR-3500-pstep-4-nhis-5-store-rest-state-epi-100-xz-scale-10-13-y-scale-10-18-vary-og-global-stiff-cluster-spacing-softbody-cubes-flatboard-poke-and-retreat-center-dist-thres-0-1"
   #data_folder: "epi-100-damping-2-flatboard-softbody-cubes-deeper-poke-and-lift-s-m-e-e-m-s-waypoints"
-  #data_folder: "epi-20-xz-scale-10-13-y-scale-10-18-vary-og-global-stiff-cluster-spacing-softbody-cubes-flatboard-poke-and-retreat-center-dist-thres-0-1"
+  data_folder: "epi-20-xz-scale-10-13-y-scale-10-18-vary-og-global-stiff-cluster-spacing-softbody-cubes-flatboard-poke-and-retreat-center-dist-thres-0-1"
   #data_folder: "epi-10-xz-scale-10-13-y-scale-10-18-og-stiff-0-5-to-1-softbody-cubes-flatboard-poke-and-retreat-center-dist-thres-0-1"
   #data_folder: "epi-5-smaller-actual-similar-size-softbody-cubes-flatboard-deeper-poke-and-lift"
   #output_name: "max-nobj-300-connect-tool-all-non-fixed-pstep-4-train-epi-100-xz-scale-10-13-y-scale-10-18-vary-og-global-stiff-cluster-spacing-softbody-cubes-flatboard-poke-and-retreat-center-dist-thres-0-1"
   #output_name: "include-rest-state-kNN-tool-to-object-train-epi-100-xz-scale-10-13-y-scale-10-18-vary-og-global-stiff-cluster-spacing-softbody-cubes-flatboard-poke-and-retreat-center-dist-thres-0-1"
   #data_folder: "mini-test-set-base-101-for-epi-100-xz-scale-10-13-y-scale-10-18-vary-og-global-stiff-cluster-spacing-softbody-cubes-flatboard-poke-and-retreat-center-dist-thres-0-1"
   #output_name: "testing-tool-to-all-non-fixed-obj-particles-cut-off-xpad"
+  #data_folder: "epi-1000-xz-scale-10-13-y-scale-10-18-vary-og-global-stiff-cluster-spacing-softbody-cubes-flatboard-poke-and-retreat-center-dist-thres-0-1"
   output_name: "include-rest-state-kNN-tool-to-object-mini-test-set-base-101-for-epi-100-xz-scale-10-13-y-scale-10-18-vary-og-global-stiff-cluster-spacing-softbody-cubes-flatboard-poke-and-retreat-center-dist-thres-0-1"
   materials: ["softbody"]
   #data_dir: "../sim_data" # data directory
   data_dir: "/media/motion/Elements/adaptigraph/sim_data"
-  #prep_data_dir: "../preprocess" # preprocessed data directory
-  prep_data_dir: "/media/motion/Elements/adaptigraph/preprocess"
+  prep_data_dir: "../preprocess" # preprocessed data directory
+  #prep_data_dir: "/media/motion/Elements/adaptigraph/preprocess"
   device: "cuda:0"
 
   verbose: False
@@ -75,7 +76,7 @@ dataset_config:
       connect_tool_all: False
       connect_tool_surface: False
       connect_tool_surface_ratio: 1.0
-      connect_tool_all_non_fixed: True
+      connect_tool_all_non_fixed: True # Set this flag to true to connect to the tool to the closest particles
       knn_range: [0.4, 1.0]
       min_knn: 0.4
       knn_increment: 0.1

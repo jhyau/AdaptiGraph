@@ -18,6 +18,23 @@ Preprocess:
     - physics params
     - metadata
 """
+
+def read_in_filter_file(file_path):
+    ## Returns a dict where the keys are episode numbers and values are list of actions that need to be filtered out
+    result = {}
+    with open(file_path, "r") as file:
+        for line in file:
+            if line.startswith("Episode: "):
+                ## f.write(f"Episode: {epi}, step/action: {step_idx}, max difference for same point at rest vs. at penultimate time step: {diff}\n")
+                delim_comma = [x.strip() for x in line.split(",")]
+                epi = delim_comma[0][delim_comma[0].find("Episode: "):].strip()
+                action = int(delim_comma[1][delim_comma[1].find("step/action: "):].strip())
+                if epi not in result:
+                    result[epi] = [action]
+                else:
+                    result[epi].append(action)
+    return result
+
     
 def process_eef(eef_states, eef_dataset):
     """
@@ -168,6 +185,12 @@ def preprocess(config, lazy_loading):
     n_future = dataset_config['n_future']
     dist_thresh = dataset_config['dist_thresh']    
     
+    # File of actions to be filtered out
+    filter_file = os.path.join(data_dir, "filter_unwanted_flex_artifacts.txt")
+    filter_file_exists = os.path.exists(filter_file)
+    if filter_file_exists:
+        filter_dict = read_in_filter_file(filter_file)
+
     # episodes
     epi_list = sorted([f for f in os.listdir(data_dir) if os.path.isdir(os.path.join(data_dir, f)) and f.isdigit()])
     num_epis = len(epi_list)
@@ -206,6 +229,11 @@ def preprocess(config, lazy_loading):
             #    
             #    # particle to object instance mapping
             #    part_2_obj_steps.append(part_2_obj_inst)
+
+            ## If the current action of the episode is flagged, then skip this action
+            if filter_file_exists:
+                if epi in filter_dict and step_idx in filter_dict[epi]:
+                    continue
             
             if "particle_inv_weight_is_0" in data.keys():
                 # boolean mask that's true when a particle's inverse weight is 0 (fixed in place)

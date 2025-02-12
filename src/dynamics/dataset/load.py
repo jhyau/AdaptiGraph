@@ -10,6 +10,9 @@ def load_pairs(pairs_path, episode_range, lowest_num=0):
         episode_idx = episode_idx + lowest_num
         n_pushes = len(list(glob.glob(os.path.join(pairs_path, f'{episode_idx:06}_*.txt'))))
         for push_idx in range(1, n_pushes+1):
+            # Load the frame pairs if the file for that action's steps exists
+            if not os.path.exists(os.path.join(pairs_path, f'{episode_idx:06}_{push_idx:02}.txt')):
+                continue
             frame_pairs = np.loadtxt(os.path.join(pairs_path, f'{episode_idx:06}_{push_idx:02}.txt'))
             print(f"frame_pairs shape: {frame_pairs.shape}")
             if len(frame_pairs.shape) == 1: continue

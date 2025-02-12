@@ -134,8 +134,12 @@ class DynDataset(Dataset):
         # Store the "rest" position at time step 0 first before the history of steps
         if self.store_rest_state:
             print(f"*****************Storing the rest state*****************")
-            obj_kps.append(self.obj_pos[episode_idx][0])
-            eef_kps.append(self.eef_pos[episode_idx][0])
+            if not self.lazy_loading:
+                obj_kps.append(self.obj_pos[episode_idx][0])
+                eef_kps.append(self.eef_pos[episode_idx][0])
+            else:
+                obj_kps.append(obj_pos[0])
+                eef_kps.append(eef_pos[0])
         for i in range(len(pair)):
             frame_idx = pair[i]
             # eef keypoints
