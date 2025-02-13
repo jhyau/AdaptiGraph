@@ -87,12 +87,12 @@ for epi_idx, epi in tqdm(enumerate(epi_list)):
 
 # Print global stats
 f.write(f"========Final stats=========\n")
-print(f"Num episodes that have artifacts: {len(epis_with_artifacts)}")
-f.write(f"Num episodes that have artifacts: {len(epis_with_artifacts)}\n")
+print(f"Final stats Num episodes that have artifacts: {len(epis_with_artifacts)}")
+f.write(f"Final stats Num episodes that have artifacts: {len(epis_with_artifacts)}\n")
 
 for key in epis_with_artifacts:
-    print(f"Episode: {key} with num actions that are flagged: {epis_with_artifacts[key]}")
-    f.write(f"Episode: {key} with num actions that are flagged: {epis_with_artifacts[key]}\n")
+    print(f"Final stats for Episode: {key} with num actions that are flagged: {epis_with_artifacts[key]}")
+    f.write(f"Final stats for Episode: {key} with num actions that are flagged: {epis_with_artifacts[key]}\n")
 
 # Close file
 f.close()

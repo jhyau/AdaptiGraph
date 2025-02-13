@@ -4,15 +4,17 @@ dataset_config:
   #output_name: "y-trans-x-rot-90-flatboard-softbody-cylinder-damping-2-deep-poke-then-lift-s-m-e-e-m-s-waypoints"
   #output_name: "max-nR-3500-pstep-4-nhis-5-store-rest-state-epi-100-xz-scale-10-13-y-scale-10-18-vary-og-global-stiff-cluster-spacing-softbody-cubes-flatboard-poke-and-retreat-center-dist-thres-0-1"
   #data_folder: "epi-100-damping-2-flatboard-softbody-cubes-deeper-poke-and-lift-s-m-e-e-m-s-waypoints"
-  data_folder: "epi-20-xz-scale-10-13-y-scale-10-18-vary-og-global-stiff-cluster-spacing-softbody-cubes-flatboard-poke-and-retreat-center-dist-thres-0-1"
+  #data_folder: "epi-20-xz-scale-10-13-y-scale-10-18-vary-og-global-stiff-cluster-spacing-softbody-cubes-flatboard-poke-and-retreat-center-dist-thres-0-1"
   #data_folder: "epi-10-xz-scale-10-13-y-scale-10-18-og-stiff-0-5-to-1-softbody-cubes-flatboard-poke-and-retreat-center-dist-thres-0-1"
   #data_folder: "epi-5-smaller-actual-similar-size-softbody-cubes-flatboard-deeper-poke-and-lift"
   #output_name: "max-nobj-300-connect-tool-all-non-fixed-pstep-4-train-epi-100-xz-scale-10-13-y-scale-10-18-vary-og-global-stiff-cluster-spacing-softbody-cubes-flatboard-poke-and-retreat-center-dist-thres-0-1"
   #output_name: "include-rest-state-kNN-tool-to-object-train-epi-100-xz-scale-10-13-y-scale-10-18-vary-og-global-stiff-cluster-spacing-softbody-cubes-flatboard-poke-and-retreat-center-dist-thres-0-1"
   #data_folder: "mini-test-set-base-101-for-epi-100-xz-scale-10-13-y-scale-10-18-vary-og-global-stiff-cluster-spacing-softbody-cubes-flatboard-poke-and-retreat-center-dist-thres-0-1"
   #output_name: "testing-tool-to-all-non-fixed-obj-particles-cut-off-xpad"
-  #data_folder: "epi-1000-xz-scale-10-13-y-scale-10-18-vary-og-global-stiff-cluster-spacing-softbody-cubes-flatboard-poke-and-retreat-center-dist-thres-0-1"
-  output_name: "include-rest-state-kNN-tool-to-object-mini-test-set-base-101-for-epi-100-xz-scale-10-13-y-scale-10-18-vary-og-global-stiff-cluster-spacing-softbody-cubes-flatboard-poke-and-retreat-center-dist-thres-0-1"
+  data_folder: "epi-1006-xz-scale-10-13-y-scale-10-18-vary-og-global-stiff-cluster-spacing-softbody-cubes-flatboard-poke-and-retreat-center-dist-thres-0-1"
+  #data_folder: "test-filtering-bad-actions-xz-scale-10-13-y-scale-10-18-vary-og-global-stiff-cluster-spacing-softbody-cubes-flatboard-poke-and-retreat-center-dist-thres-0-1"
+  #output_name: "test-filtering-bad-actions-xz-scale-10-13-y-scale-10-18-vary-og-global-stiff-cluster-spacing-softbody-cubes-flatboard-poke-and-retreat-center-dist-thres-0-1"
+  output_name: "include-rest-state-kNN-tool-to-object-val-epi-1006-xz-scale-10-13-y-scale-10-18-vary-og-global-stiff-cluster-spacing-softbody-cubes-flatboard-poke-and-retreat-center-dist-thres-0-1"
   materials: ["softbody"]
   #data_dir: "../sim_data" # data directory
   data_dir: "/media/motion/Elements/adaptigraph/sim_data"
@@ -22,7 +24,7 @@ dataset_config:
 
   verbose: False
   # preprocess
-  n_his: 5 #4
+  n_his: 5 #4 To include the rest state in history, +1
   n_future: 3
   dist_thresh: 0.1 # 1.0cm
 
@@ -30,12 +32,12 @@ dataset_config:
   store_rest_state: True
 
   ratio:
-    #train: [0, 0.9]
-    #valid: [0.9, 1]
+    train: [0, 0.9]
+    valid: [0.9, 1]
     #train: [0, 0.98]
     #valid: [0.98, 1]
-    train: [0, 0]
-    valid: [0, 1]
+    #train: [0, 0]
+    #valid: [0, 1]
     #train: [0, 0]
     #valid: [0.2, 0.4]
 

@@ -13,7 +13,7 @@ sys.path.append('.')
 from dynamics.gnn.model import DynamicsPredictor
 from sim.utils import load_yaml
 from dynamics.utils import set_seed, truncate_graph, pad, pad_torch
-from dynamics.dataset.load import load_dataset, load_positions, load_part_2_instance, load_part_inv_weight_is_0
+from dynamics.dataset.load import load_dataset, load_positions, lazy_load_positions, get_position_paths, load_part_2_instance, load_part_inv_weight_is_0
 from dynamics.rollout.graph import construct_graph, get_next_pair_or_break_episode, get_next_pair_or_break_episode_pushes
 from dynamics.rollout.graph import extract_imgs, visualize_graph, moviepy_merge_video
 from dynamics.dataset.graph import construct_edges_from_states
@@ -271,7 +271,7 @@ def rollout_from_start_graph(graph, fps_idx_list, dataset_config, material_confi
 def rollout_episode_pushes(model, device, dataset_config, material_config,
                         eef_pos, obj_pos, episode_idx, lowest_epi_num, pairs, physics_param,
                         save_dir, viz, imgs, cam_info, part_2_obj_inst, part_inv_weight_0,
-                        keep_prev_fps, hetero):
+                        keep_prev_fps, hetero, lazy_loading, lazy_load_pos_paths=None):
     n_his = dataset_config['n_his']
     store_rest_state = dataset_config['store_rest_state']
     
@@ -303,8 +303,12 @@ def rollout_episode_pushes(model, device, dataset_config, material_config,
             end = pair[n_his]
         print(f"pair: {pair}, start: {start}, end: {end}")
         
-        eef_pos_epi = eef_pos[episode_idx-lowest_epi_num] # (T, N_eef, 3)
-        obj_pos_epi = obj_pos[episode_idx-lowest_epi_num] # (T, N_obj, 3)
+        if not lazy_loading:
+            eef_pos_epi = eef_pos[episode_idx-lowest_epi_num] # (T, N_eef, 3)
+            obj_pos_epi = obj_pos[episode_idx-lowest_epi_num] # (T, N_obj, 3)
+        else:
+            ## Lazily load in each episode as needed
+            eef_pos_epi, obj_pos_epi = lazy_load_positions(lazy_load_pos_paths, episode_idx-lowest_epi_num)
         # Get particle to object instance mapping
         if part_2_obj_inst:
             part_2_obj_inst_epi = part_2_obj_inst[episode_idx-lowest_epi_num] # (T, N_obj, 1)
@@ -364,7 +368,7 @@ def rollout_episode_pushes(model, device, dataset_config, material_config,
     
     return error_list_pushes
 
-def rollout_dataset(model, device, config, save_dir, viz, keep_prev_fps, hetero):
+def rollout_dataset(model, device, config, save_dir, viz, keep_prev_fps, hetero, lazy_loading):
     ## config
     dataset_config = config['dataset_config']
     material_config = config['material_config']
@@ -375,7 +379,13 @@ def rollout_dataset(model, device, config, save_dir, viz, keep_prev_fps, hetero)
     print(f"Rollout dataset has {len(pair_lists)} frame pairs.")
     
     ## load positions
-    eef_pos, obj_pos = load_positions(dataset_config)
+    if lazy_loading:
+        print(f"!!!lazy loading positions!!!")
+        position_paths = get_position_paths(dataset_config)
+        eef_pos, obj_pos = lazy_load_positions(position_paths, 0) # Load in first episode
+    else:
+        position_paths = None
+        eef_pos, obj_pos = load_positions(dataset_config) # (num_epis, T, N_obj or N_eef, 3)
 
     ## load particle to object instance mapping
     part_2_obj_inst = load_part_2_instance(dataset_config)
@@ -416,7 +426,7 @@ def rollout_dataset(model, device, config, save_dir, viz, keep_prev_fps, hetero)
                                         pair_lists_episode, physics_params_episode,
                                         save_dir_episode_pushes, viz, imgs, cam_info, part_2_obj_inst, 
                                         part_inv_weight_0,
-                                        keep_prev_fps, hetero)
+                                        keep_prev_fps, hetero, lazy_loading, lazy_load_pos_paths=position_paths)
         total_error_short.extend(error_list_short)
     
     ## final statistics
@@ -451,7 +461,7 @@ def rollout_dataset(model, device, config, save_dir, viz, keep_prev_fps, hetero)
         plt.savefig(os.path.join(save_dir, f'{save_name}.png'), dpi=300)
         plt.close()
 
-def rollout(config, epoch, ckpt_data_name, viz=False, keep_prev_fps=False, hetero=False):
+def rollout(config, epoch, ckpt_data_name, viz=False, keep_prev_fps=False, hetero=False, lazy_loading=False):
     ## config
     dataset_config = config['dataset_config']
     train_config = config['train_config']
@@ -496,7 +506,7 @@ def rollout(config, epoch, ckpt_data_name, viz=False, keep_prev_fps=False, heter
     model.load_state_dict(torch.load(checkpoint_dir, map_location=device))
     
     ## rollout dataset
-    rollout_dataset(model, device, config, save_dir, viz, keep_prev_fps, hetero)
+    rollout_dataset(model, device, config, save_dir, viz, keep_prev_fps, hetero, lazy_loading)
     
 if __name__ == "__main__":
     arg_parser = argparse.ArgumentParser()
@@ -506,8 +516,9 @@ if __name__ == "__main__":
     arg_parser.add_argument('--viz', action='store_true')
     arg_parser.add_argument('--keep_prev_fps', action='store_true') # set this flag to keep FPS indices for all time steps
     arg_parser.add_argument('--hetero', action='store_true') # set this flag to change to hetero phys params for rollout
+    arg_parser.add_argument('--lazy_loading', action="store_true", help="Set flag if preprocessed positions.pkl was done so for lazy loading")
     args = arg_parser.parse_args()
 
     config = load_yaml(args.config)
     
-    rollout(config, args.epoch, args.ckpt_data_name, args.viz, keep_prev_fps=args.keep_prev_fps, hetero=args.hetero)
+    rollout(config, args.epoch, args.ckpt_data_name, args.viz, keep_prev_fps=args.keep_prev_fps, hetero=args.hetero, lazy_loading=args.lazy_loading)

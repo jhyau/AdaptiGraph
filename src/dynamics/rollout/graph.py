@@ -645,6 +645,8 @@ def construct_graph(dataset_config, material_config, eef_pos, obj_pos,
     return graph, fps_idx_list, fps2phys
 
 def get_next_pair_or_break_episode(pairs, n_his, n_frames, current_end, store_rest_state=False):
+    if store_rest_state:
+        n_his = n_his - 1
     # find next pair
     valid_pairs = pairs[pairs[:, n_his-1] == current_end]
     # avoid loop

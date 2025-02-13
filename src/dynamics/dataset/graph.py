@@ -157,7 +157,7 @@ def construct_edges_from_states(states, adj_thresh, mask, tool_mask, topk=10, co
                 # Find the distance of each non-fixed object particle (receiver) to tool (sender)
                 # Keep the closest kNN percent of them, sort the distance in ascending order
                 keepK = int(kNN * max_obj_receiv_tool_send_rels)
-                print(f"--------------------reducing kNN for connect tool to non-fixed obj particles------------------------")
+                print(f"--------------------kNN < 1.0 for connect tool to non-fixed obj particles------------------------")
                 print(f"Max tool to non-fixed obj particles: {max_obj_receiv_tool_send_rels}, kNN: {kNN}, keepK: {keepK}")
                 keepK_idx = torch.topk(dis[surf_obj_tool_mask_2.to("cpu")], k=keepK, dim=-1, largest=False)[1]
                 keepK_matrix = torch.zeros_like(dis[surf_obj_tool_mask_2.to("cpu")])

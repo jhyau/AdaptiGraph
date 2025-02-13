@@ -24,11 +24,16 @@ def read_in_filter_file(file_path):
     result = {}
     with open(file_path, "r") as file:
         for line in file:
+            if line.find("Final stats") != -1:
+                # Done parsing through the flag file
+                break
+            
             if line.startswith("Episode: "):
-                ## f.write(f"Episode: {epi}, step/action: {step_idx}, max difference for same point at rest vs. at penultimate time step: {diff}\n")
+                # f.write(f"Episode: {epi}, step/action: {step_idx}, max difference for same point at rest vs. at penultimate time step: {diff}\n")
                 delim_comma = [x.strip() for x in line.split(",")]
-                epi = delim_comma[0][delim_comma[0].find("Episode: "):].strip()
-                action = int(delim_comma[1][delim_comma[1].find("step/action: "):].strip())
+                epi = delim_comma[0][delim_comma[0].find("Episode: ")+9:].strip()
+                action = int(delim_comma[1][delim_comma[1].find("step/action: ")+13:].strip())
+                print(f"epi: {epi}, action: {action}")
                 if epi not in result:
                     result[epi] = [action]
                 else:
@@ -183,7 +188,12 @@ def preprocess(config, lazy_loading):
     
     n_his = dataset_config['n_his']
     n_future = dataset_config['n_future']
-    dist_thresh = dataset_config['dist_thresh']    
+    dist_thresh = dataset_config['dist_thresh']
+    store_rest_state = dataset_config['store_rest_state']
+
+    if store_rest_state:
+        # Need to subtract one from n_his for preprocessing since one step is storing the rest state
+        n_his = n_his - 1
     
     # File of actions to be filtered out
     filter_file = os.path.join(data_dir, "filter_unwanted_flex_artifacts.txt")
@@ -291,7 +301,7 @@ def preprocess(config, lazy_loading):
             }
             with open(pos_path, 'wb') as f:
                 pickle.dump(pos_info, f)
-            assert len(all_eef_pos) == len(all_obj_pos) == num_epis
+            # assert len(all_eef_pos) == len(all_obj_pos) == num_epis
 
         epi_time_end = time.time()
         print(f'Episode {epi_idx+1}/{num_epis} has frames {obj_steps.shape[0]} took {epi_time_end - epi_time_start:.2f}s.')

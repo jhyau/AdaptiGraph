@@ -2,7 +2,8 @@ dataset:
   #folder: "../sim_data" # folder to save data
   folder: "/media/motion/Elements/adaptigraph/sim_data"
   obj: "softbody"
-  save_dir: "epi-1000-xz-scale-10-13-y-scale-10-18-vary-og-global-stiff-cluster-spacing-softbody-cubes-flatboard-poke-and-retreat-center-dist-thres-0-1"
+  save_dir: "epi-1006-xz-scale-10-13-y-scale-10-18-vary-og-global-stiff-cluster-spacing-softbody-cubes-flatboard-poke-and-retreat-center-dist-thres-0-1"
+  #save_dir: "test-filtering-bad-actions-xz-scale-10-13-y-scale-10-18-vary-og-global-stiff-cluster-spacing-softbody-cubes-flatboard-poke-and-retreat-center-dist-thres-0-1"
   #save_dir: "epi-20-damping-2-flatboard-softbody-cubes-deeper-forward-poke-s-m-e-e-waypoints"
   #save_dir: "epi-100-damping-2-flatboard-softbody-cubes-deeper-poke-and-lift-s-m-e-e-m-s-waypoints"
   #save_dir: "epi-20-xz-scale-10-13-y-scale-10-18-vary-og-global-stiff-cluster-spacing-softbody-cubes-flatboard-poke-and-retreat-center-dist-thres-0-1"
@@ -12,7 +13,7 @@ dataset:
 
   # data collection
   base: 0 #37
-  n_episode: 1000 #1000
+  n_episode: 1006 #1000
   n_timestep: 10
   n_worker: 2
   
