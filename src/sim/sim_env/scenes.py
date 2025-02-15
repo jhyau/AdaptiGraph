@@ -297,7 +297,7 @@ def softbody_scene():
 
     # Load box (actual cube) [0 or 3] or sphere [1] or cylinder[2]
     # ignore cube mesh (rectangular) for now
-    obj_type = 0 #rand_int(0, 4)
+    obj_type = 0 if np.random.rand() < 0.5 else 2 #rand_int(0, 4)
 
     # if cylinder, don't rotate in y direction
     if obj_type == 2:
@@ -314,7 +314,7 @@ def softbody_scene():
         # rotate_3 = rot_3.as_quat()
         # rotate = quaternion_multuply(rotate, rotate_3)
         # For cylinder, it needs to be translated more along y-axis
-        trans_cylin = (scale[1]/s_scale) + 0.5
+        trans_cylin = (scale[1]/y_scale) + 0.5
         trans = [0., trans_cylin, 2.0]
         print(f"cylinder softbody trans: {trans}")
     else:

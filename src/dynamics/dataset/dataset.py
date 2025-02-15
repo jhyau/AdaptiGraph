@@ -117,7 +117,8 @@ class DynDataset(Dataset):
     def __getitem__(self, idx):
         episode_idx = self.pair_lists[idx][0].astype(int)
         pair = self.pair_lists[idx][1:].astype(int)
-        if self.store_rest_state:
+        print(f"pair size: {len(pair)}")
+        if self.store_rest_state and len(pair) != self.n_his + self.n_future:
             assert len(pair) == self.n_his - 1 + self.n_future
         else:
             assert len(pair) == self.n_his + self.n_future
@@ -131,8 +132,9 @@ class DynDataset(Dataset):
         ## get history keypoints
         obj_kps = []
         eef_kps = []
-        # Store the "rest" position at time step 0 first before the history of steps
-        if self.store_rest_state:
+        # Store the "rest" position at time step 0 first before the history of steps if it wasn't added to the frame pairs
+        # in preprocessing
+        if self.store_rest_state and len(pair) != self.n_his + self.n_future:
             print(f"*****************Storing the rest state*****************")
             if not self.lazy_loading:
                 obj_kps.append(self.obj_pos[episode_idx][0])

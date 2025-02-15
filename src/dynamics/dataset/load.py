@@ -8,7 +8,9 @@ def load_pairs(pairs_path, episode_range, lowest_num=0):
     for episode_idx in episode_range:
         # Increment episode index by the lowest starting episode number
         episode_idx = episode_idx + lowest_num
-        n_pushes = len(list(glob.glob(os.path.join(pairs_path, f'{episode_idx:06}_*.txt'))))
+        # TODO: due to filtering out actions that aren't used hard code the max number of actions for now
+        n_pushes = 10
+        # n_pushes = len(list(glob.glob(os.path.join(pairs_path, f'{episode_idx:06}_*.txt')))) # Needs to be num actions
         for push_idx in range(1, n_pushes+1):
             # Load the frame pairs if the file for that action's steps exists
             if not os.path.exists(os.path.join(pairs_path, f'{episode_idx:06}_{push_idx:02}.txt')):
@@ -16,8 +18,8 @@ def load_pairs(pairs_path, episode_range, lowest_num=0):
             frame_pairs = np.loadtxt(os.path.join(pairs_path, f'{episode_idx:06}_{push_idx:02}.txt'))
             print(f"frame_pairs shape: {frame_pairs.shape}")
             if len(frame_pairs.shape) == 1: continue
-            episodes = np.ones((frame_pairs.shape[0], 1)) * episode_idx
-            pairs = np.concatenate([episodes, frame_pairs], axis=1) # (T, 8)
+            episodes = np.ones((frame_pairs.shape[0], 1)) * episode_idx # Prepend frame pairs with episode idx
+            pairs = np.concatenate([episodes, frame_pairs], axis=1) # (T, 8), becomes (T,9) if include rest state
             pair_lists.extend(pairs)
     pair_lists = np.array(pair_lists).astype(int)
     return pair_lists
@@ -194,11 +196,12 @@ def load_part_inv_weight_is_0(dataset_config):
             inv = pickle.load(f)
         return inv['particle_inv_weight_is_0'] 
     else:
+        # For lazy loading, each episode's inv weight is 0 data is saved as a dict with one key
         inv = []
         for idx,part_path in enumerate(part_paths):
             print(f"loading from {part_path}")
             with open(part_path, "rb") as f:
                 data = pickle.load(f)
-            inv.append(data)
+            inv.append(data['particle_inv_weight_is_0'])
         return inv
     

@@ -54,6 +54,7 @@ def rollout_from_start_graph(graph, fps_idx_list, dataset_config, material_confi
     
     n_his = dataset_config['n_his']
     store_rest_state = dataset_config['store_rest_state']
+    n_future = dataset_config['n_future']
     n_frames = obj_pos.shape[0]
     assert eef_pos.shape[0] == n_frames
     
@@ -148,9 +149,9 @@ def rollout_from_start_graph(graph, fps_idx_list, dataset_config, material_confi
             print(f"error from rollout step {i}: {error}")
             
             # prepare next pair, start, end
-            next_pair = get_next_pair_or_break_func(pairs, n_his, n_frames, current_end, store_rest_state=store_rest_state)
+            next_pair = get_next_pair_or_break_func(pairs, n_his, n_frames, current_end, n_future, store_rest_state=store_rest_state)
             if next_pair is None: break
-            if store_rest_state:
+            if store_rest_state and len(next_pair) != n_his + n_future:
                 current_start = next_pair[n_his-1-1]
                 current_end = next_pair[n_his-1]
             else:
@@ -274,6 +275,7 @@ def rollout_episode_pushes(model, device, dataset_config, material_config,
                         keep_prev_fps, hetero, lazy_loading, lazy_load_pos_paths=None):
     n_his = dataset_config['n_his']
     store_rest_state = dataset_config['store_rest_state']
+    n_future = dataset_config['n_future']
     
     ## get steps
     #pairs_path = os.path.join(dataset_config['prep_data_dir'], dataset_config['data_name']+"_set_action_first_try_100_epochs", 'frame_pairs')
@@ -295,7 +297,7 @@ def rollout_episode_pushes(model, device, dataset_config, material_config,
     for i in range(num_steps):
         valid_pairs = np.loadtxt(pairs_list[i]).astype(int)
         pair = valid_pairs[0]
-        if store_rest_state:
+        if store_rest_state and len(pair) != n_his + n_future:
             start = pair[n_his-1-1]
             end = pair[n_his-1]
         else:
@@ -377,6 +379,7 @@ def rollout_dataset(model, device, config, save_dir, viz, keep_prev_fps, hetero,
     pair_lists, physics_params, lowest_epi_num = load_dataset(dataset_config, material_config, phase='valid')
     pair_lists = np.array(pair_lists)
     print(f"Rollout dataset has {len(pair_lists)} frame pairs.")
+    print(pair_lists)
     
     ## load positions
     if lazy_loading:
@@ -397,16 +400,18 @@ def rollout_dataset(model, device, config, save_dir, viz, keep_prev_fps, hetero,
     total_error_short = []
     
     ## get errors for each episode
-    episode_idx_list = sorted(list(np.unique(pair_lists[:, 0]).astype(int))) # [7]
+    episode_idx_list = sorted(list(np.unique(pair_lists[:, 0]).astype(int))) # [7], if store rest pos then [8]
     for episode_idx in episode_idx_list:
         print(f"episode idx: {episode_idx}, lowest_epi_num: {lowest_epi_num}")
-        pair_lists_episode = pair_lists[pair_lists[:, 0] == episode_idx][:, 1:]
+        pair_lists_episode = pair_lists[pair_lists[:, 0] == episode_idx][:, 1:] # Finds frame pairs for episode_idx, removes first (epi) idx
         physics_params_episode = physics_params[episode_idx-lowest_epi_num]
         
         if viz:
             imgs, cam_info = extract_imgs(dataset_config, episode_idx, cam=0)
             print(f"num imgs: {len(imgs)}, num pair lists episode: {len(pair_lists_episode)}")
-            assert len(imgs) == len(pair_lists_episode)
+            print(pair_lists_episode)
+            # Now that we filter certain actions out, the below assert will not be accurate anymore
+            # assert len(imgs) == len(pair_lists_episode)
             # Save the original images and make into movie
             print(f"saving OG images...")
             og_img_path = os.path.join(save_dir, f"og_epi_{episode_idx}")

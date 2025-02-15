@@ -103,7 +103,7 @@ def extract_physics(physics_path, obj):
         raise ValueError('Invalid object type.')
     return phys_param
 
-def extract_push(eef, dist_thresh, n_his, n_future, n_frames):
+def extract_push(eef, dist_thresh, n_his, n_future, n_frames, store_rest_state):
     """
     eef: (T, N_eef, 3)
     """
@@ -119,8 +119,8 @@ def extract_push(eef, dist_thresh, n_his, n_future, n_frames):
         curr_frame = fj
         
         # search backward (n_his)
-        eef_curr = eef[curr_frame]
         frame_traj = [curr_frame]
+        eef_curr = eef[curr_frame]
         fi = fj
         while fi >= start_frame:
             eef_fi = eef[fi]
@@ -131,12 +131,15 @@ def extract_push(eef, dist_thresh, n_his, n_future, n_frames):
                 frame_traj.append(fi)
                 eef_curr = eef_fi
             fi -= 1
+            if store_rest_state and len(frame_traj) == n_his - 1:
+                # if storing rest state, then prepend each frame trajectory with 0 for the first frame in history
+                frame_traj.append(0)
             if len(frame_traj) == n_his:
                 break
         else:
             # pad to n_his
             frame_traj = frame_traj + [frame_traj[-1]] * (n_his - len(frame_traj))
-        frame_traj = frame_traj[::-1]
+        frame_traj = frame_traj[::-1] # Reverses the list
         
         # search forward (n_future)
         eef_curr = eef[curr_frame]
@@ -163,7 +166,12 @@ def extract_push(eef, dist_thresh, n_his, n_future, n_frames):
         # push centered
         if fj == end_frame - 1:
             frame_idxs = np.array(frame_idxs)
-            frame_idxs = frame_idxs + n_frames # add previous steps
+            if store_rest_state:
+                # The first index should be rest state, frame index 0
+                print(f"shape of frame_idxs: {frame_idxs.shape} and n_frames: {n_frames}")
+                frame_idxs[:, 1:] = frame_idxs[:, 1:] + n_frames
+            else:
+                frame_idxs = frame_idxs + n_frames # add previous steps
     
     return frame_idxs, cnt
 
@@ -191,9 +199,9 @@ def preprocess(config, lazy_loading):
     dist_thresh = dataset_config['dist_thresh']
     store_rest_state = dataset_config['store_rest_state']
 
-    if store_rest_state:
-        # Need to subtract one from n_his for preprocessing since one step is storing the rest state
-        n_his = n_his - 1
+    # if store_rest_state:
+    #     # Need to subtract one from n_his for preprocessing since one step is storing the rest state
+    #     n_his = n_his - 1
     
     # File of actions to be filtered out
     filter_file = os.path.join(data_dir, "filter_unwanted_flex_artifacts.txt")
@@ -239,11 +247,6 @@ def preprocess(config, lazy_loading):
             #    
             #    # particle to object instance mapping
             #    part_2_obj_steps.append(part_2_obj_inst)
-
-            ## If the current action of the episode is flagged, then skip this action
-            if filter_file_exists:
-                if epi in filter_dict and step_idx in filter_dict[epi]:
-                    continue
             
             if "particle_inv_weight_is_0" in data.keys():
                 # boolean mask that's true when a particle's inverse weight is 0 (fixed in place)
@@ -252,13 +255,18 @@ def preprocess(config, lazy_loading):
 
             # preprocess eef and push
             out_eef = process_eef(eef_states, eef_dataset) # (T, N_eef, 3)
-            frame_idxs, cnt = extract_push(out_eef, dist_thresh, n_his, n_future, n_frames)
+            frame_idxs, cnt = extract_push(out_eef, dist_thresh, n_his, n_future, n_frames, store_rest_state)
             assert len(frame_idxs) == cnt, 'Number of pushes not match.'
             n_frames += cnt
             
             # eef and object positions
             eef_steps.append(out_eef)
             obj_steps.append(positions)
+
+            ## If the current action of the episode is flagged, then skip this action and do not write to savetxt
+            if filter_file_exists:
+                if epi in filter_dict and step_idx in filter_dict[epi]:
+                    continue
             
             # save frame idxs
             np.savetxt(os.path.join(push_save_dir, f'{epi}_{(step_idx):02}.txt'), frame_idxs, fmt='%d')

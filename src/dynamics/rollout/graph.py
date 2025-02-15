@@ -45,6 +45,7 @@ def extract_imgs(dataset_config, episode_idx, cam=0):
         imgs.extend(color_imgs)
     imgs = np.array(imgs)
     print(f"time it took to load images: {time.time() - start}")
+    print(f"Number of images in episode {episode_idx}: {imgs.shape}")
     
     ## load camera
     camera_dir = os.path.join(data_dir, 'cameras')
@@ -345,6 +346,7 @@ def construct_graph(dataset_config, material_config, eef_pos, obj_pos,
     # prev_fps_idx_list will not be None if using the same FPS indices for all time steps. It's the list of FPS indices
     # fps2phys will not be None if using prev_fps_idx_list, it will map each fps idx to phys param once (sorts by z,x,y)
     ## config
+    n_future = dataset_config['n_future']
     dataset = dataset_config['datasets'][0]
     max_nobj = dataset['max_nobj']
     max_nR = dataset['max_nR']
@@ -382,7 +384,8 @@ def construct_graph(dataset_config, material_config, eef_pos, obj_pos,
     # eef are probably the end effector's key points
     obj_kps = []
     eef_kps = []
-    if store_rest_state:
+    if store_rest_state and len(pair) != n_his + n_future:
+        print(f"+++Need to prepend the rest state in rollout graph construction+++")
         # If storing rest state, do so
         obj_kps.append(obj_pos[0])
         eef_kps.append(eef_pos[0])
@@ -644,8 +647,8 @@ def construct_graph(dataset_config, material_config, eef_pos, obj_pos,
     print("graph keys: ", graph.keys())
     return graph, fps_idx_list, fps2phys
 
-def get_next_pair_or_break_episode(pairs, n_his, n_frames, current_end, store_rest_state=False):
-    if store_rest_state:
+def get_next_pair_or_break_episode(pairs, n_his, n_frames, current_end, n_future, store_rest_state=False):
+    if store_rest_state and len(pairs) != n_his + n_future:
         n_his = n_his - 1
     # find next pair
     valid_pairs = pairs[pairs[:, n_his-1] == current_end]
@@ -664,10 +667,10 @@ def get_next_pair_or_break_episode(pairs, n_his, n_frames, current_end, store_re
     next_pair = valid_pairs[int(len(valid_pairs)/2)]  # pick the middle one
     return next_pair
 
-def get_next_pair_or_break_episode_pushes(pairs, n_his, n_frames, current_end, store_rest_state=False):
+def get_next_pair_or_break_episode_pushes(pairs, n_his, n_frames, current_end, n_future, store_rest_state=False):
     # find next pair
     print("pairs: ", pairs.shape)
-    if store_rest_state:
+    if store_rest_state and len(pairs) != n_his + n_future:
         n_his = n_his - 1
     valid_pairs = pairs[pairs[:, n_his-1] == current_end]
     print(f"num valid pairs: {len(valid_pairs)}, current_end: {current_end}, n_his: {n_his}")
