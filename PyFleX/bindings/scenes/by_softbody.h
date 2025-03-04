@@ -172,6 +172,9 @@ public:
 		// Damping
 		float damping = ptr[31];
 
+		// Softbody or rigid
+		float stiffness = ptr[32];
+
 		char box_path[100];
 		std::string obj_path;
 		if (obj_to_load == 0) {
@@ -215,7 +218,7 @@ public:
 		g_params.radius = radius;
 		g_params.dynamicFriction = dynamicFriction;
 		g_params.particleFriction = particleFrinction;
-		g_params.numIterations = 4;
+		g_params.numIterations = 10; //4;
 		g_params.collisionDistance = collisionDistance;
 
 		g_params.relaxationFactor = mRelaxationFactor;
@@ -238,7 +241,7 @@ public:
 
 		// build soft bodies 
 		// for (int i = 0; i < int(mInstances.size()); i++)
-		CreateSoftBody(fixed_coord, fixed_particles, mInstances[0], mRenderingInstances.size());
+		CreateSoftBody(stiffness, fixed_coord, fixed_particles, mInstances[0], mRenderingInstances.size());
 
 		if (mPlinth) 
 			AddPlinth();
@@ -254,7 +257,7 @@ public:
 		g_lightDistance *= 1.5f;
 	}
 
-	void CreateSoftBody(int fixed_coord, int fixed_particles, Instance instance, int group = 0, bool texture=false)
+	void CreateSoftBody(float stiffness, int fixed_coord, int fixed_particles, Instance instance, int group = 0, bool texture=false)
 	{
 		RenderingInstance renderingInstance;
 
@@ -273,23 +276,59 @@ public:
 
 		double createStart = GetSeconds();
 
+		// Testing out creating rigid body definition
+		NvFlexExtAsset* asset;
+		if (stiffness >= 1.3) {
+			std::cout << "Creating rigid from mesh..." << std::endl;
+			asset = NvFlexExtCreateRigidFromMesh(
+				(float*)&renderingInstance.mMesh->m_positions[0],
+				renderingInstance.mMesh->m_positions.size(),
+				(int*)&renderingInstance.mMesh->m_indices[0],
+				renderingInstance.mMesh->m_indices.size(),
+				// 0.03,
+				// -0.03*0.5f
+				mRadius,
+				-mRadius*0.5f
+			);
+		} else {
+			// create soft body definition
+			std::cout << "TESING PYFLEX RECOMPILE CHANGES Creating soft from mesh..." << std::endl;
+			asset = NvFlexExtCreateSoftFromMesh(
+				(float*)&renderingInstance.mMesh->m_positions[0],
+				renderingInstance.mMesh->m_positions.size(),
+				(int*)&renderingInstance.mMesh->m_indices[0],
+				renderingInstance.mMesh->m_indices.size(),
+				mRadius,
+				instance.mVolumeSampling,
+				instance.mSurfaceSampling,
+				instance.mClusterSpacing*mRadius,
+				instance.mClusterRadius*mRadius,
+				instance.mClusterStiffness,
+				instance.mLinkRadius*mRadius,
+				instance.mLinkStiffness,
+				instance.mGlobalStiffness,
+				instance.mClusterPlasticThreshold,
+				instance.mClusterPlasticCreep);
+		}
+		std::cout << "Finished function for creating soft from mesh!" << std::endl;
+		
 		// create soft body definition
-		NvFlexExtAsset* asset = NvFlexExtCreateSoftFromMesh(
-			(float*)&renderingInstance.mMesh->m_positions[0],
-			renderingInstance.mMesh->m_positions.size(),
-			(int*)&renderingInstance.mMesh->m_indices[0],
-			renderingInstance.mMesh->m_indices.size(),
-			mRadius,
-			instance.mVolumeSampling,
-			instance.mSurfaceSampling,
-			instance.mClusterSpacing*mRadius,
-			instance.mClusterRadius*mRadius,
-			instance.mClusterStiffness,
-			instance.mLinkRadius*mRadius,
-			instance.mLinkStiffness,
-			instance.mGlobalStiffness,
-			instance.mClusterPlasticThreshold,
-			instance.mClusterPlasticCreep);
+		// NvFlexExtAsset* asset = NvFlexExtCreateSoftFromMesh(
+		// 	(float*)&renderingInstance.mMesh->m_positions[0],
+		// 	renderingInstance.mMesh->m_positions.size(),
+		// 	(int*)&renderingInstance.mMesh->m_indices[0],
+		// 	renderingInstance.mMesh->m_indices.size(),
+		// 	mRadius,
+		// 	instance.mVolumeSampling,
+		// 	instance.mSurfaceSampling,
+		// 	instance.mClusterSpacing*mRadius,
+		// 	instance.mClusterRadius*mRadius,
+		// 	instance.mClusterStiffness,
+		// 	instance.mLinkRadius*mRadius,
+		// 	instance.mLinkStiffness,
+		// 	instance.mGlobalStiffness,
+		// 	instance.mClusterPlasticThreshold,
+		// 	instance.mClusterPlasticCreep);
 
 		double createEnd = GetSeconds();
 

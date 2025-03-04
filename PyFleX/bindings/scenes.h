@@ -115,6 +115,7 @@ public:
 #include "scenes/by_roperigid.h" //38
 #include "scenes/by_ropegranular.h" //39
 #include "scenes/by_multi_objects.h" //40
+#include "scenes/debris.h" //41
 
 #include "scenes/adhesion.h"
 #include "scenes/armadilloshower.h" 
@@ -125,7 +126,6 @@ public:
 #include "scenes/clothlayers.h" 
 #include "scenes/dambreak.h"
 #include "scenes/darts.h"
-#include "scenes/debris.h"
 #include "scenes/deformables.h"
 #include "scenes/fluidblock.h"
 #include "scenes/fluidclothcoupling.h"

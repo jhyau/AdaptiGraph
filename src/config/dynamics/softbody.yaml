@@ -9,12 +9,14 @@ dataset_config:
   #data_folder: "epi-5-smaller-actual-similar-size-softbody-cubes-flatboard-deeper-poke-and-lift"
   #output_name: "max-nobj-300-connect-tool-all-non-fixed-pstep-4-train-epi-100-xz-scale-10-13-y-scale-10-18-vary-og-global-stiff-cluster-spacing-softbody-cubes-flatboard-poke-and-retreat-center-dist-thres-0-1"
   #output_name: "include-rest-state-kNN-tool-to-object-train-epi-100-xz-scale-10-13-y-scale-10-18-vary-og-global-stiff-cluster-spacing-softbody-cubes-flatboard-poke-and-retreat-center-dist-thres-0-1"
-  data_folder: "mini-test-set-base-101-for-epi-100-xz-scale-10-13-y-scale-10-18-vary-og-global-stiff-cluster-spacing-softbody-cubes-flatboard-poke-and-retreat-center-dist-thres-0-1"
-  output_name: "testing-hetero-volumetric-elastic-rollout"
+  #data_folder: "mini-test-set-base-101-for-epi-100-xz-scale-10-13-y-scale-10-18-vary-og-global-stiff-cluster-spacing-softbody-cubes-flatboard-poke-and-retreat-center-dist-thres-0-1"
+  #output_name: "testing-pure-soft-volumetric-elastic-rollout-train-14-16-epi-100-xz-scale-10-13-y-scale-10-18"
   #data_folder: "epi-1006-xz-scale-10-13-y-scale-10-18-vary-og-global-stiff-cluster-spacing-softbody-cubes-flatboard-poke-and-retreat-center-dist-thres-0-1"
   #output_name: "include-rest-state-kNN-tool-to-object-val-epi-1006-xz-scale-10-13-y-scale-10-18-vary-og-global-stiff-cluster-spacing-softbody-cubes-flatboard-poke-and-retreat-center-dist-thres-0-1"
-  #data_folder: "cube-cylinder-epi-6-xz-scale-10-13-y-scale-10-18-vary-og-global-stiff-cluster-spacing-softbody-cubes-flatboard-poke-and-retreat-center-dist-thres-0-1"
-  #output_name: "cube-cylinder-epi-6-xz-scale-10-13-y-scale-10-18-vary-og-global-stiff-cluster-spacing-softbody-cubes-flatboard-poke-and-retreat-center-dist-thres-0-1"
+  # data_folder: "rigid-mesh-mixed-test-radius-0-05"
+  # output_name: "rigid-mesh-mixed-test-radius-0-05"
+  data_folder: "softbody_with_different_cluster_spacing_per_cluster"
+  output_name: "softbody_with_different_cluster_spacing_per_cluster"
   materials: ["softbody"]
   #data_dir: "../sim_data" # data directory
   data_dir: "/media/motion/Elements/adaptigraph/sim_data"
@@ -39,7 +41,7 @@ dataset_config:
     train: [0, 0]
     valid: [0, 1]
     #train: [0, 0]
-    #valid: [0.2, 0.4]
+    #valid: [0.14, 0.17]
 
   eef:
     #max_neef: 1

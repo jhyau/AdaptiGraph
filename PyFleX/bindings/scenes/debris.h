@@ -31,28 +31,50 @@ public:
 		float scale;
 	};
 
-	void Initialize()
+	char* make_path(char* full_path, std::string path) {
+		strcpy(full_path, getenv("PYFLEXROOT"));
+		strcat(full_path, path.c_str());
+		return full_path;
+	}
+
+	void Initialize(py::array_t<float> scene_params, 
+                    py::array_t<float> vertices,
+                    py::array_t<int> stretch_edges,
+                    py::array_t<int> bend_edges,
+                    py::array_t<int> shear_edges,
+                    py::array_t<int> faces,
+                    int thread_idx = 0)
 	{
+		std::cout << "Initializing for debris.h" << std::endl;
+		
 		float radius = 0.1f;
 
-		const int numMeshes = 8;
+		const int numMeshes = 2; //8;
 		MeshAsset meshes[numMeshes] =
 		{
-			{ "../../data/rocka.ply", 0.2f },
-			{ "../../data/box.ply", 0.1f },
-			{ "../../data/torus.obj", 0.3f },
-			{ "../../data/rockd.ply", 0.2f },
-			{ "../../data/banana.obj", 0.3f },
-			{ "../../data/rocka.ply", 0.2f },
-			{ "../../data/box.ply", 0.1f },
-			{ "../../data/rockd.ply", 0.2f },
+			{"/data/box.ply", 0.1f},
+			{"/data/box.ply", 0.1f}
+			// { "../../data/rocka.ply", 0.2f },
+			// { "../../data/box.ply", 0.1f },
+			// { "../../data/torus.obj", 0.3f },
+			// { "../../data/rockd.ply", 0.2f },
+			// { "../../data/banana.obj", 0.3f },
+			// { "../../data/rocka.ply", 0.2f },
+			// { "../../data/box.ply", 0.1f },
+			// { "../../data/rockd.ply", 0.2f },
 			//"../../data/rockf.ply"
 		};
 
 		for (int i = 0; i < numMeshes; ++i)
 		{
-			Mesh* mesh = ImportMesh(GetFilePathByPlatform(meshes[i].file).c_str(), false);
+			// Mesh* mesh = ImportMesh(GetFilePathByPlatform(meshes[i].file).c_str(), false);
+			char box_path[100];
+			Mesh* mesh = ImportMesh(make_path(box_path, meshes[i].file), false);
 			mesh->Normalize(meshes[i].scale);
+
+			std::cout << "m_positions from the mesh: " << (float*)&mesh->m_positions[0] << std::endl;
+			std::cout << "m_positions size: " << int(mesh->m_positions.size()) << std::endl;
+			std::cout << "num indices: " << mesh->m_indices.size() << std::endl;
 
 			const float spacing = radius*0.5f;
 
@@ -63,13 +85,15 @@ public:
 			mBatches.push_back(b);
 		}
 
-		Mesh* level = ImportMeshFromBin(GetFilePathByPlatform("../../data/testzone.bin").c_str());
-		level->Transform(TranslationMatrix(Point3(-10.0f, 0.0f, 10.0f)));
+		// Mesh* level = ImportMeshFromBin(GetFilePathByPlatform("../../data/testzone.bin").c_str());
+		// char box_path[100];
+		// Mesh* level = ImportMeshFromBin(make_path(box_path, "/data/testzone.bin"));
+		// level->Transform(TranslationMatrix(Point3(-10.0f, 0.0f, 10.0f)));
 
-		NvFlexTriangleMeshId mesh = CreateTriangleMesh(level);
-		AddTriangleMesh(mesh, Vec3(), Quat(), 1.0f);
+		// NvFlexTriangleMeshId mesh = CreateTriangleMesh(level);
+		// AddTriangleMesh(mesh, Vec3(), Quat(), 1.0f);
 
-		delete level;
+		// delete level;
 
 		g_params.radius = radius;
 		g_params.dynamicFriction = 0.6f;
@@ -100,6 +124,7 @@ public:
 
 	void Update()
 	{
+		std::cout << "within debris.h update function" << std::endl;
 		// copy transforms out
 		for (int i = 0; i < int(mInstances.size()); ++i)
 		{
@@ -109,10 +134,12 @@ public:
 
 		if (g_emit)
 		{
+			std::cout << "g_emit is true for debris.h" << std::endl;
 			// emit new debris
 			int numToEmit = 1;//Rand()%8;
 
 			int particleOffset = NvFlexGetActiveCount(g_solver);
+			std::cout << "particleOffset: " << particleOffset << std::endl;
 
 			for (int i = 0; i < numToEmit; ++i)
 			{
@@ -120,6 +147,7 @@ public:
 				const int meshIndex = Rand() % mBatches.size();
 
 				NvFlexExtAsset* asset = mBatches[meshIndex].mAsset;
+				std::cout << "numParticles: " << asset->numParticles << std::endl;
 
 				// check we can fit in the container
 				if (int(g_buffers->positions.size()) - particleOffset < asset->numParticles)
@@ -201,6 +229,8 @@ public:
 			Instance& inst = mInstances[i];
 
 			NvFlexExtAsset* asset = mBatches[inst.mMeshIndex].mAsset;
+
+			std::cout << "asset numParticles" << asset->numParticles << std::endl;
 
 			for (int j = 0; j < asset->numParticles; ++j)
 			{

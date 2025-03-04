@@ -10,12 +10,14 @@ dataset:
   #save_dir: "epi-100-xz-scale-10-13-y-scale-10-18-vary-og-global-stiff-cluster-spacing-softbody-cubes-flatboard-poke-and-retreat-center-dist-thres-0-1"
   #save_dir: "epi-5-smaller-actual-similar-size-softbody-cubes-flatboard-deeper-poke-and-lift"
   #save_dir: "mini-test-set-base-101-for-epi-100-xz-scale-10-13-y-scale-10-18-vary-og-global-stiff-cluster-spacing-softbody-cubes-flatboard-poke-and-retreat-center-dist-thres-0-1"
-  save_dir: "cube-cylinder-epi-6-xz-scale-10-13-y-scale-10-18-vary-og-global-stiff-cluster-spacing-softbody-cubes-flatboard-poke-and-retreat-center-dist-thres-0-1"
+  #save_dir: "larger-surface-area-cube-epi-6-solver-10-iter-xz-scale-10-13-y-scale-10-18-stiff-up-to-1-4-collisionDist-0-8-of-rad-softbody-flatboard-poke-and-retreat-center-dist-thres-0-1"
+  # save_dir: "rigid-mesh-mixed-test-radius-0-05"
+  save_dir: "softbody_with_different_cluster_spacing_per_cluster"
 
   # data collection
   base: 0 #37
-  n_episode: 6 #1006
-  n_timestep: 10
+  n_episode: 2 #1006
+  n_timestep: 5
   n_worker: 2
   
   # sim env

@@ -2573,6 +2573,9 @@ void pyflex_init(bool headless=false) {
     // Multi objects scene
     g_scenes.push_back(new by_MultiObjects("Multi Objects")); //40
 
+    // Rigid scene
+    g_scenes.push_back(new RigidDebris("Rigid Debris")); //41
+
     // init graphics
     RenderInitOptions options;
 

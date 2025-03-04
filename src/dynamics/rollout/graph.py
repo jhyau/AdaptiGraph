@@ -574,7 +574,9 @@ def construct_graph(dataset_config, material_config, eef_pos, obj_pos,
     # sort the particles by position (in order of z, x, y) then set the physics params for current time step
     # sort the visible (keypoint) particles
     # fps_obj_kps takes the fps index points from obj_kp, then rest are padded to be zero. obj_kp_num of actual fps points
-    sort_by_pos = np.lexsort((fps_obj_kps[-1,:obj_kp_num,1], fps_obj_kps[-1,:obj_kp_num,0], fps_obj_kps[-1,:obj_kp_num,2]))
+    # sort_by_pos = np.lexsort((fps_obj_kps[-1,:obj_kp_num,1], fps_obj_kps[-1,:obj_kp_num,0], fps_obj_kps[-1,:obj_kp_num,2]))
+    ## Sort by position in order of y, x, z
+    sort_by_pos = np.lexsort((fps_obj_kps[-1,:obj_kp_num,2], fps_obj_kps[-1,:obj_kp_num,0], fps_obj_kps[-1,:obj_kp_num,1]))
     print(f"sorted indices for fps: {sort_by_pos}")
     # print(f"obj_kps only fps: {obj_kps[-1][fps_idx_list]}")
     # print(f"obj_kps only fps sorted: {obj_kps[-1][fps_idx_list][sort_by_pos]}")
@@ -592,9 +594,9 @@ def construct_graph(dataset_config, material_config, eef_pos, obj_pos,
         half = int(len(sort_by_pos)/2)
         for i,idx in enumerate(list(sort_by_pos)):
             if i < half:
-                fps2phys[idx] = 0.0
+                fps2phys[idx] = 0.0 #2.0
             else:
-                fps2phys[idx] = 2.0
+                fps2phys[idx] = 0.0 #2.0
     for material_name in physics_param.keys():
         #graph[material_name + '_physics_param'] = physics_param[material_name]
         print(f"material: {material_name}, original physics_param: {physics_param[material_name]}")
@@ -615,8 +617,8 @@ def construct_graph(dataset_config, material_config, eef_pos, obj_pos,
                 for key in fps2phys:
                     physics_for_each_obj[key] = fps2phys[key]
             else:
-                physics_for_each_obj[sort_by_pos[:int(len(sort_by_pos)/2)]] = 0.0
-                physics_for_each_obj[sort_by_pos[int(len(sort_by_pos)/2):]] = 2.0
+                physics_for_each_obj[sort_by_pos[:int(len(sort_by_pos)/2)]] = 0.0 #0.0
+                physics_for_each_obj[sort_by_pos[int(len(sort_by_pos)/2):]] = 0.0 #2.0
        
         # Set physics param based on some threshold of x position (e.g. if < x, then 0.0, else 2.0)
         #for i in range(obj_kp_num):
@@ -648,7 +650,7 @@ def construct_graph(dataset_config, material_config, eef_pos, obj_pos,
     return graph, fps_idx_list, fps2phys
 
 def get_next_pair_or_break_episode(pairs, n_his, n_frames, current_end, n_future, store_rest_state=False):
-    if store_rest_state and len(pairs) != n_his + n_future:
+    if store_rest_state and pairs.shape[1] != n_his + n_future:
         n_his = n_his - 1
     # find next pair
     valid_pairs = pairs[pairs[:, n_his-1] == current_end]
@@ -670,7 +672,7 @@ def get_next_pair_or_break_episode(pairs, n_his, n_frames, current_end, n_future
 def get_next_pair_or_break_episode_pushes(pairs, n_his, n_frames, current_end, n_future, store_rest_state=False):
     # find next pair
     print("pairs: ", pairs.shape)
-    if store_rest_state and len(pairs) != n_his + n_future:
+    if store_rest_state and pairs.shape[1] != n_his + n_future:
         n_his = n_his - 1
     valid_pairs = pairs[pairs[:, n_his-1] == current_end]
     print(f"num valid pairs: {len(valid_pairs)}, current_end: {current_end}, n_his: {n_his}")

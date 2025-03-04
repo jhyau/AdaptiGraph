@@ -501,7 +501,8 @@ class FlexEnv(gym.Env):
             ## Choose between vertical poke or horizontal push
             ## For stiff cubes, do horizontal push only
             act = np.random.rand()
-            if physics_params['stiffness'] > 0.5 or act > 0.5:
+            # if physics_params['stiffness'] > 0.5 or act > 0.5:
+            if act > 0.5:
                 ## This movement is in x or z-coordinate, y is fixed for each action
                 print(f"=========sampling horizontal push action===========")
                 action = self.sample_horizontal_deform_actions(physics_params)
@@ -853,8 +854,8 @@ class FlexEnv(gym.Env):
                         continue
                     quart = (max_y - min_y) / 25
                     fives = (max_y - min_y) / 20
-                    if y <= (max_y - quart) and y >= (max_y - fives):
-                    #if y <= (max_y - fives) and y >= center_y:
+                    #if y <= (max_y - quart) and y >= (max_y - fives):
+                    if y <= (max_y - quart) and y >= center_y:
                         chosen_points.append(idx)
                 # choose surface points only or also include middle points
                 # if is_surface_poke:

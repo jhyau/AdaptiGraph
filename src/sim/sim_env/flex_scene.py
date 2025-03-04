@@ -27,7 +27,12 @@ class FlexScene:
         elif self.obj == "softbody":
             # 6 is yz_softbody.h, 37 is by_softbody.h
             self.env_idx = 37
+            # self.env_idx = 41
             self.scene_params, self.property_params = softbody_scene()
+        elif self.obj == "rigid":
+            # 50 is debris.h
+            self.env_idx = 41
+            self.scene_params, self.property_params = rigid_scene()
         elif self.obj == "bunnybath":
             # index is 0 for yz_bunnybath.h
             # bunnybath.h doesn't take the same params as input

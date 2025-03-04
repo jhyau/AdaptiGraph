@@ -186,6 +186,7 @@ int CreateClusters(Vec3* particles, const float* priority, int numParticles, std
 {
 	std::vector<Seed> seeds;
 	std::vector<Cluster> clusters;
+	float radius_ep = 0.0;
 
 	// flags a particle as belonging to at least one cluster
 	std::vector<bool> used(numParticles, false);
@@ -215,7 +216,9 @@ int CreateClusters(Vec3* particles, const float* priority, int numParticles, std
 		{
 			Cluster c;
 
-			sap.QuerySphere(Vec3(particles[seed.index]), radius, c.indices);
+			std::cout << "radius: " << radius << ", radius epsilon cluster creation: " << radius_ep << std::endl;
+
+			sap.QuerySphere(Vec3(particles[seed.index]), radius+radius_ep, c.indices);
 			
 			// mark overlapping particles as used so they are removed from the list of potential cluster seeds
 			for (int i=0; i < int(c.indices.size()); ++i)
@@ -224,6 +227,7 @@ int CreateClusters(Vec3* particles, const float* priority, int numParticles, std
 			c.mean = CalculateMean(particles, &c.indices[0], int(c.indices.size()));
 
 			clusters.push_back(c);
+			radius_ep += 1e-4;
 		}
 	}
 

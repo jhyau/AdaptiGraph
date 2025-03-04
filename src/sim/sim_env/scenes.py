@@ -223,32 +223,38 @@ def softbody_scene():
     # allow greater variance for height, but don't allow anything beyond 80
     # surface area of the xz plane needs to be smaller to avoid having the flatboard push get snagged on the corner
     #scale = np.array([rand_float(2.0, 2.5), rand_float(2.1, 3.0), rand_float(2.0, 2.5)]) * s_scale #* 50
-    scale = np.array([rand_float(2.0, 2.5) * x_z_scale, rand_float(2.1, 3.0) * y_scale, rand_float(2.0, 2.5) * x_z_scale])
+    scale = np.array([rand_float(2.0, 2.5) * x_z_scale, rand_float(2.5, 3.0) * y_scale, rand_float(2.0, 2.5) * x_z_scale])
     print(f"softbody scale: {scale} with x_z_scale: {x_z_scale}, y_scale: {y_scale}")
     
     # softbody stiffness
     stiffness = np.random.rand()
-    # stiffness = np.random.uniform(0.5, 1.0)
+    # stiffness = np.random.uniform(0.5, 1.4)
+    # stiffness = np.random.uniform(1.3, 1.4)
     # For no penetration of soft case, max global stiffness is 0.000012, cluster spacing 2.48
     # OG soft case: (0.0, 0.06), stiff case: 0.99
-    #if np.random.rand() <= 0.5:
-        # soft case
-    #    stiffness = np.random.uniform(0.0, 0.06)
-    #else:
-        # stiff case
-    #    stiffness = np.random.uniform(0.06, 1.0)
+    
+    ## Load box (actual cube) [0 or 3] or sphere [1] or cylinder[2]
+    # ignore cube mesh (rectangular) for now
+    obj_type = 0 if np.random.rand() < 0.5 else 2 #rand_int(0, 4)
     print(f"softbody stiffness for uniform/homogeneous: {stiffness}")
     if stiffness <= 0.5:
         #global_stiffness = stiffness * 1e-4 / 0.5
         #cluster_spacing = 2 + 8 * stiffness
-        global_stiffness = stiffness * 1.2e-5 / 0.5
-        cluster_spacing = 2 + 0.96 * stiffness
+        global_stiffness = stiffness * 1.2e-5 / 0.5 # Max is 1.2e-5
+        cluster_spacing = 2 + 0.96 * stiffness # Max is around 2.5
     else:
         # For stiff case, stiffness 0.99 works pretty well (slight penetration sometimes)
-        global_stiffness = (stiffness - 0.5) * 4e-4 + 1e-4
-        #global_stiffness = stiffness #* 4e-4 + 4e-4
-        cluster_spacing = 6 + 4 * (stiffness - 0.5)
-        #cluster_spacing = 10 + 4 * stiffness
+        #global_stiffness = (stiffness - 0.5) * 4e-4 + 1e-4
+        global_stiffness = (stiffness - 0.5) + 1.2e-5
+        #cluster_spacing = 6 + 4 * (stiffness - 0.5)
+        cluster_spacing = 2.5 + 70 * (stiffness - 0.5)
+        #cluster_spacing = 2 + 0.96 * (stiffness - 0.5)
+        ## Larger surface area for stiff cube cases
+        if obj_type == 0:
+            x_z_scale = rand_int(12, 14) #10
+            #y_scale = rand_int(10, 18) #18
+            scale = np.array([rand_float(2.0, 2.5) * x_z_scale, rand_float(2.5, 3.0) * y_scale, rand_float(2.0, 2.5) * x_z_scale])
+            print(f"larger cube scale: {scale} with x_z_scale: {x_z_scale}, y_scale: {y_scale}")
     
     # For very soft cases, don't want the cube to be too tall
     # if stiffness < 0.1:
@@ -284,7 +290,7 @@ def softbody_scene():
     draw_mesh = 0 #set 0 for particles only, no mesh
 
     relaxtion_factor = 1.
-    collisionDistance = radius * 0.5
+    collisionDistance = radius * 0.8
 
     # damping: viscous drag force, applies a force proportional and opposite to the particle velocity
     damping = 2.0
@@ -297,7 +303,7 @@ def softbody_scene():
 
     # Load box (actual cube) [0 or 3] or sphere [1] or cylinder[2]
     # ignore cube mesh (rectangular) for now
-    obj_type = 0 if np.random.rand() < 0.5 else 2 #rand_int(0, 4)
+    #obj_type = 0 #0 if np.random.rand() < 0.5 else 2 #rand_int(0, 4)
 
     # if cylinder, don't rotate in y direction
     if obj_type == 2:
@@ -341,7 +347,8 @@ def softbody_scene():
                             surface_sampling, volume_sampling, skinning_falloff, skinning_max_dist,
                             cluster_plastic_threshold, cluster_plastic_creep,
                             dynamicFriction, particleFriction, draw_mesh, relaxtion_factor, 
-                            *rotate, collisionDistance, num_fixed_particles, fixed_coord, obj_type, damping])
+                            *rotate, collisionDistance, num_fixed_particles, fixed_coord, obj_type, damping,
+                            stiffness])
     
     property_params = {'particle_radius': radius,
                     'cluster_radius': cluster_radius,
@@ -350,6 +357,13 @@ def softbody_scene():
                     "global_stiffness": global_stiffness,
                     "stiffness": stiffness,}
     
+    return scene_params, property_params
+
+def rigid_scene():
+    radius = 0.05
+    scene_params = np.array([0])
+    property_params = {'particle_radius': radius,
+                    "stiffness": 1.0,}
     return scene_params, property_params
 
 def yz_bunnybath_scene():
