@@ -182,7 +182,7 @@ struct SweepAndPrune
 	std::vector<Entry> entries;
 };
 
-int CreateClusters(Vec3* particles, const float* priority, int numParticles, std::vector<int>& outClusterOffsets, std::vector<int>& outClusterIndices, std::vector<Vec3>& outClusterPositions, float radius, float smoothing = 0.0f)
+int CreateClusters(Vec3* particles, const float* priority, int numParticles, std::vector<int>& outClusterOffsets, std::vector<int>& outClusterIndices, std::vector<Vec3>& outClusterPositions, float radius, bool fromCreateSoftFromMesh = false, float smoothing = 0.0f)
 {
 	std::vector<Seed> seeds;
 	std::vector<Cluster> clusters;
@@ -191,6 +191,8 @@ int CreateClusters(Vec3* particles, const float* priority, int numParticles, std
 	// flags a particle as belonging to at least one cluster
 	std::vector<bool> used(numParticles, false);
 
+	// store the largest y-coordinate from particles
+	float max_y = 0.0;
 	// initialize seeds
 	for (int i = 0; i < numParticles; ++i)
 	{
@@ -199,12 +201,22 @@ int CreateClusters(Vec3* particles, const float* priority, int numParticles, std
 		s.priority = priority[i];
 
 		seeds.push_back(s);
+
+		// Find largest y-coordinate
+		if (particles[i].y > max_y) {
+			max_y = particles[i].y;
+		}
 	}
 
 	// sort seeds on priority
 	std::stable_sort(seeds.begin(), seeds.end());
 
 	SweepAndPrune sap(particles, numParticles);
+
+	float threshold = max_y / 2.0; //seeds.size() / 10;
+	std::cout << "seeds size: " << seeds.size() << ", threshold: " << threshold << std::endl;
+	std::cout << "largest y coordinate: " << max_y << std::endl;
+	std::cout << "is from NvFlexExtCreateSoftFromMesh? " << fromCreateSoftFromMesh << std::endl;
 
 	while (seeds.size())
 	{
@@ -216,7 +228,15 @@ int CreateClusters(Vec3* particles, const float* priority, int numParticles, std
 		{
 			Cluster c;
 
-			std::cout << "radius: " << radius << ", radius epsilon cluster creation: " << radius_ep << std::endl;
+			Vec3 part = Vec3(particles[seed.index]);
+
+			if (fromCreateSoftFromMesh && part.y >= threshold && radius_ep < 1.0) {
+				radius_ep = 1.0;
+				std::cout << "!!!setting to larger cluster radius!!!" << std::endl;
+			}
+			if (fromCreateSoftFromMesh) {
+				std::cout << "radius: " << radius << ", radius epsilon cluster creation: " << radius_ep << std::endl;
+			}
 
 			sap.QuerySphere(Vec3(particles[seed.index]), radius+radius_ep, c.indices);
 			
@@ -227,9 +247,12 @@ int CreateClusters(Vec3* particles, const float* priority, int numParticles, std
 			c.mean = CalculateMean(particles, &c.indices[0], int(c.indices.size()));
 
 			clusters.push_back(c);
-			radius_ep += 1e-4;
+			// std::cout << "cluster mean: " << c.mean << ", cluster radius: " << c.radius << ", num indices: " << c.indices.size() << std::endl;
+			// radius_ep += 1e-4;
 		}
 	}
+
+	std::cout << "final number of clusters: " << clusters.size() << std::endl;
 
 	if (smoothing > 0.0f)
 	{
@@ -504,7 +527,8 @@ void SampleMesh(const Vec3* vertices, int numVertices, const int* indices, int n
 	std::vector<float> priority(samples.size());
 
 	// cluster mesh sample points into actual particles
-	CreateClusters(&samples[0], &priority[0], int(samples.size()), clusterOffsets, clusterIndices, outPositions, radius);
+	std::cout << "in the sampleMesh function... radius: " << radius << std::endl; 
+	CreateClusters(&samples[0], &priority[0], int(samples.size()), clusterOffsets, clusterIndices, outPositions, radius, false);
 }
 
 } // anonymous namespace
@@ -552,7 +576,8 @@ NvFlexExtAsset* NvFlexExtCreateSoftFromMesh(const float* vertices, int numVertic
 		priority[i] = 0.0f;
 
 	// cluster particles into shape matching groups
-	int numClusters = CreateClusters(&samples[0], &priority[0], int(samples.size()), clusterOffsets, clusterIndices, clusterPositions, clusterSpacing, clusterRadius);
+	std::cout << "in NvFlexExtCreateSoftFromMesh function, before createClusters. clusterspacing: " << clusterSpacing << std::endl;
+	int numClusters = CreateClusters(&samples[0], &priority[0], int(samples.size()), clusterOffsets, clusterIndices, clusterPositions, clusterSpacing, true, clusterRadius);
 	
 	// assign all clusters the same stiffness 
 	clusterCoefficients.resize(numClusters, clusterStiffness);

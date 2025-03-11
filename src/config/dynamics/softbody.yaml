@@ -15,8 +15,8 @@ dataset_config:
   #output_name: "include-rest-state-kNN-tool-to-object-val-epi-1006-xz-scale-10-13-y-scale-10-18-vary-og-global-stiff-cluster-spacing-softbody-cubes-flatboard-poke-and-retreat-center-dist-thres-0-1"
   # data_folder: "rigid-mesh-mixed-test-radius-0-05"
   # output_name: "rigid-mesh-mixed-test-radius-0-05"
-  data_folder: "softbody_with_different_cluster_spacing_per_cluster"
-  output_name: "softbody_with_different_cluster_spacing_per_cluster"
+  data_folder: "soft-softbody_with_two_different_cluster_spacing"
+  output_name: "soft-softbody_with_two_different_cluster_spacing"
   materials: ["softbody"]
   #data_dir: "../sim_data" # data directory
   data_dir: "/media/motion/Elements/adaptigraph/sim_data"

@@ -293,6 +293,7 @@ public:
 		} else {
 			// create soft body definition
 			std::cout << "TESING PYFLEX RECOMPILE CHANGES Creating soft from mesh..." << std::endl;
+			std::cout << "mRadius: " << mRadius << ", and actual cluster spacing: " << instance.mClusterSpacing*mRadius << std::endl;
 			asset = NvFlexExtCreateSoftFromMesh(
 				(float*)&renderingInstance.mMesh->m_positions[0],
 				renderingInstance.mMesh->m_positions.size(),

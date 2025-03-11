@@ -227,9 +227,10 @@ def softbody_scene():
     print(f"softbody scale: {scale} with x_z_scale: {x_z_scale}, y_scale: {y_scale}")
     
     # softbody stiffness
-    stiffness = np.random.rand()
+    # stiffness = np.random.rand()
     # stiffness = np.random.uniform(0.5, 1.4)
     # stiffness = np.random.uniform(1.3, 1.4)
+    stiffness = np.random.uniform(0.0, 0.5)
     # For no penetration of soft case, max global stiffness is 0.000012, cluster spacing 2.48
     # OG soft case: (0.0, 0.06), stiff case: 0.99
     
@@ -255,7 +256,7 @@ def softbody_scene():
             #y_scale = rand_int(10, 18) #18
             scale = np.array([rand_float(2.0, 2.5) * x_z_scale, rand_float(2.5, 3.0) * y_scale, rand_float(2.0, 2.5) * x_z_scale])
             print(f"larger cube scale: {scale} with x_z_scale: {x_z_scale}, y_scale: {y_scale}")
-    
+    print(f"global stiffness: {global_stiffness}, cluster spacing: {cluster_spacing}")
     # For very soft cases, don't want the cube to be too tall
     # if stiffness < 0.1:
     #     base_area = scale[0] * scale[2]
